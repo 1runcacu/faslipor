@@ -1,0 +1,36 @@
+2022/10/05 10:02:17 [error] 13520#14352: *1 CreateFile() "D:\sofeware\nginx-1.23.1/html/favicon.ico" failed (2: The system cannot find the file specified), client: 127.0.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "localhost", referrer: "http://localhost/"
+2022/10/05 10:04:48 [notice] 18520#20196: signal process started
+2022/10/05 10:05:22 [emerg] 4312#14256: CreateFile() "D:/nginx-1.15.2/conf/nginx.conf" failed (3: The system cannot find the path specified)
+2022/10/08 00:23:27 [emerg] 20176#26344: unknown directive "//可选参数，正则验证地址" in E:\part5\STATIC-ASSET\nginx-1.23.1/conf/nginx.conf:56
+2022/10/08 00:23:36 [emerg] 2536#40676: unknown directive "//可选参数，正则验证地址" in E:\part5\STATIC-ASSET\nginx-1.23.1/conf/nginx.conf:56
+2022/10/08 00:24:50 [emerg] 26696#40704: unknown directive "//可选参数，正则验证地址" in E:\part5\STATIC-ASSET\nginx-1.23.1/conf/nginx.conf:56
+2022/10/08 00:25:10 [emerg] 37956#33252: unknown directive "//可选参数，正则验证地址" in E:\part5\STATIC-ASSET\nginx-1.23.1/conf/nginx.conf:56
+2022/10/08 00:25:23 [notice] 38800#25968: signal process started
+2022/10/08 00:25:28 [notice] 28328#34636: signal process started
+2022/10/08 00:27:54 [notice] 940#40808: signal process started
+2022/10/08 00:27:54 [error] 940#40808: CreateFile() "E:\part5\STATIC-ASSET\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/10/08 00:29:53 [notice] 41436#35684: signal process started
+2022/10/08 00:29:58 [notice] 12664#34652: signal process started
+2022/10/08 16:58:39 [notice] 23892#23324: signal process started
+2022/10/08 17:09:30 [notice] 13432#13412: signal process started
+2022/10/09 00:57:07 [notice] 13360#15364: signal process started
+2022/10/09 00:57:07 [error] 13360#15364: CreateFile() "E:\part5\STATIC-ASSET\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/10/09 00:58:33 [notice] 13328#23388: signal process started
+2022/10/09 01:02:37 [notice] 596#18484: signal process started
+2022/10/09 01:02:37 [error] 596#18484: CreateFile() "E:\part5\STATIC-ASSET\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/10/09 01:05:09 [notice] 27004#15116: signal process started
+2022/10/09 01:10:18 [notice] 26084#17992: signal process started
+2022/10/09 01:10:18 [error] 26084#17992: CreateFile() "E:\part5\STATIC-ASSET\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/10/09 01:10:45 [notice] 21520#24872: signal process started
+2022/10/09 01:10:45 [error] 21520#24872: CreateFile() "E:\part5\STATIC-ASSET\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/10/09 01:10:55 [notice] 23444#20996: signal process started
+2022/10/09 01:10:55 [error] 23444#20996: CreateFile() "E:\part5\STATIC-ASSET\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/10/09 01:11:10 [notice] 20704#19504: signal process started
+2022/10/09 01:11:10 [error] 20704#19504: CreateFile() "E:\part5\STATIC-ASSET\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/10/09 01:12:21 [notice] 20992#23024: signal process started
+2022/10/09 01:12:21 [error] 20992#23024: CreateFile() "E:\part5\STATIC-ASSET\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/10/10 23:54:40 [notice] 41292#43116: signal process started
+2022/10/10 23:54:40 [error] 41292#43116: OpenEvent("Global\ngx_stop_27568") failed (2: The system cannot find the file specified)
+2022/10/11 00:39:02 [notice] 7556#34144: signal process started
+2022/10/11 00:39:02 [error] 7556#34144: OpenEvent("Global\ngx_stop_16800") failed (2: The system cannot find the file specified)
+2022/10/11 00:39:02 [emerg] 35820#41712: bind() to 0.0.0.0:8888 failed (10013: An attempt was made to access a socket in a way forbidden by its access permissions)

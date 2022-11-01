@@ -1,0 +1,14 @@
+http://nginx.org/en/download.html
+
+start nginx
+
+tasklist /fi "imagename eq nginx.exe"
+
+nginx -s reload
+
+nginx -s stop
+
+nginx -s quit
+
+
+taskkill /f /t /im nginx.exe
