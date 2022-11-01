@@ -1,11 +1,16 @@
 import { createWebHistory, createRouter } from "vue-router";
 
 import login from '@/pages/app-login.vue';
+import index from '@/pages/app-index.vue';
 
 const routes = [
   {
-      path: "/",
-      component:login
+    path: "/",
+    component:login
+  },
+  {
+    path: "/panel",
+    component:index
   }
 ];
 
