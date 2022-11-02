@@ -1,16 +1,21 @@
 import { createWebHistory, createRouter } from "vue-router";
 
-import login from '@/pages/app-login.vue';
+import create from '@/pages/app-create.vue';
 import index from '@/pages/app-index.vue';
+import canvas from '@/pages/app-canvas.vue';
 
 const routes = [
   {
     path: "/",
-    component:login
+    component:index
+  },
+  {
+    path: "/create",
+    component:create
   },
   {
     path: "/panel",
-    component:index
+    component:canvas
   }
 ];
 
