@@ -118,5 +118,7 @@ let rooms = computed(()=>{
 #addRoom>.el-icon{
   font-size: 3rem;
 }
-
+#addRoom:hover>.el-icon{
+  color: #409EFF;
+}
 </style>
