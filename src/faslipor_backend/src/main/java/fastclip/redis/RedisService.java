@@ -6,6 +6,8 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import com.alibaba.fastjson.JSON;
 
+import java.util.List;
+
 @Service
 public class RedisService {
 
@@ -42,7 +44,10 @@ public class RedisService {
             return (T)str;
         }else if(clazz == long.class || clazz == Long.class) {
             return  (T)Long.valueOf(str);
-        }else {
+        }else if(clazz== List.class){
+            return JSON.toJavaObject(JSON.parseArray(str),clazz);
+        }
+        else {
             return JSON.toJavaObject(JSON.parseObject(str), clazz);
         }
     }
