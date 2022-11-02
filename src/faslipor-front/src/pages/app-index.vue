@@ -1,40 +1,122 @@
 <template>
-  <canvas width="600" height="600" id="canvas" style="border: 1px solid #ccc;"></canvas>
+  <div id="box">
+    <div id="card">
+      <el-input
+        v-model="search"
+        class="w-50 m-2"
+        size="large"
+        placeholder="房间搜索"
+        :suffix-icon="Search"
+        style="width: 300px;"
+      />
+      <div id="rooms">
+        <el-card v-for="item in rooms">
+          <template #header>
+            <div class="card-header">
+              <span>{{item.name}}</span>
+              <el-button class="button" text>进入</el-button>
+            </div>
+          </template>
+          描述:{{item.description}}
+        </el-card>
+        <el-card :body-style="{ height: '100%' }">
+          <div id="addRoom">
+            <el-icon><Plus/></el-icon>
+          </div>
+        </el-card>
+      </div>
+      <el-pagination background layout="prev, pager, next" :total="total" />
+    </div>
+  </div>
 </template>
- 
+
 <script setup>
-import { onMounted } from 'vue'
-import { fabric } from 'fabric'
- 
-function init() {
-  let canvas = new fabric.Canvas('canvas') // 实例化fabric，并绑定到canvas元素上
- 
-  // 圆
-  let circle = new fabric.Circle({
-    left: 100,
-    top: 100,
-    radius: 50,
-  })
- 
-  // 线性渐变
-  let gradient = new fabric.Gradient({
-    type: 'linear', // linear or radial
-    gradientUnits: 'pixels', // pixels or pencentage 像素 或者 百分比
-    coords: { x1: 0, y1: 0, x2: circle.width, y2: 0 }, // 至少2个坐标对(x1，y1和x2，y2)将定义渐变在对象上的扩展方式
-    colorStops:[ // 定义渐变颜色的数组
-      { offset: 0, color: 'red' },
-      { offset: 0.2, color: 'orange' },
-      { offset: 0.4, color: 'yellow' },
-      { offset: 0.6, color: 'green' },
-      { offset: 0.8, color: 'blue' },
-      { offset: 1, color: 'purple' },
-    ]
-  })
-  circle.set('fill', gradient);
-  canvas.add(circle)
+import { ElPagination } from 'element-plus';
+import {Search,Plus} from '@element-plus/icons-vue'
+import { ref,computed } from 'vue';
+
+let search = ref("");
+let total = ref(1000);
+
+const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
+
+const list = [];
+for(let i=0;i<20;i++){
+  list.push({
+    name:"房间"+i,
+    description:ID()
+  });
 }
- 
-onMounted(() => {
-  init()
-})
+
+let rooms = computed(()=>{
+  let key = search.value;
+  let reg = RegExp(key);
+  return list.filter(v=>{
+    return !key||reg.test(v.name);
+  }).slice(0,7);
+});
+
 </script>
+
+<style scoped>
+#box{
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  align-items: center;
+  height: 100%;
+}
+#card{
+  height: 100%;
+  width: calc(100% - 600px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  margin: 100px;
+  padding: 20px;
+  overflow: hidden;
+}
+#rooms{
+  flex:1;
+  margin: 40px;
+  padding: 20px 20px 0 20px;
+  width: 80%;
+  column-count: 4;
+  column-gap: 20px;
+  border-radius: 1rem;
+  backdrop-filter: blur(5px);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+#rooms>div{
+  height: calc(100% / 2.2);
+  margin-bottom: 20px;
+}
+
+.el-input:hover{
+  box-shadow: rgb(204, 204, 204) 0px 0px 10px;
+  transform: scale(1.01,1.01);
+}
+
+.el-card:hover{
+  box-shadow: gray 0px 0px 10px;
+  transform: scale(1.05,1.05);
+}
+
+.card-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#addRoom{
+  height: calc(100% - 40px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#addRoom>.el-icon{
+  font-size: 3rem;
+}
+
+</style>
