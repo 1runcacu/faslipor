@@ -12,7 +12,7 @@
 
 ​		前端：vue|vuex|vue router|element plus| fabric
 
-​		后端：springboot maven|redis
+​		后端：springboot|redis
 
 
 
@@ -25,3 +25,4 @@
 
 
 ## 更多信息
+
