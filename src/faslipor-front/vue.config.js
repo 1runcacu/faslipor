@@ -22,7 +22,13 @@ module.exports = defineConfig({
         pathRewrite: {
           '/CONNECT': ''
         }
-      }
+      },
+      // '/socket.io':{
+      //   target: 'http://43.143.130.52:8099/', // target host
+      //   changeOrigin: true, // needed for virtual hosted sites
+      //   logLevel: 'debug',
+      //   ws:true
+      // }
     }
   }
 })

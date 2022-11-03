@@ -119,6 +119,7 @@ let rooms = computed(()=>{
   border-radius: 1rem;
   backdrop-filter: blur(5px);
   background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: rgb(204, 204, 204) 0px 0px 8px;
 }
 #rooms>div{
   height: calc(100% / 2.2);
