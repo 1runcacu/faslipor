@@ -27,8 +27,18 @@
           </router-link>
         </el-card>
       </div>
-      <el-pagination background layout="prev, pager, next" :total="total" />
+      <el-pagination background layout="prev, pager, next" :total="total" v-model:current-page="current"/>
     </div>
+    <winUI :resizeAble="false" @close="closeWin" :closeShow="winShow">
+      <template #head>
+          <div><b>快捷创建</b></div>
+        </template>
+      <el-form class="form" v-drag="dragAble">
+        <vueInputVue v-model="roomName" hint="房间名称"/>
+        <vueInputVue v-model="description" hint="房间简介"/>
+        <el-button>快捷创建</el-button>
+      </el-form>
+    </winUI>
   </div>
 </template>
 
@@ -36,14 +46,26 @@
 import { ElPagination } from 'element-plus';
 import {Search,Plus} from '@element-plus/icons-vue'
 import { ref,computed,inject,getCurrentInstance } from 'vue';
+import vueInputVue from '@/components/vue-input.vue';
+import winUI from '@/components/win-ui.vue';
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 
-let search = ref("");
-let total = ref(1000);
+const search = ref("");
+const total = ref(1);
+const current = ref(1);
 
+const roomName = ref("");
+const description = ref("");
+
+const dragAble = ref(true);
 
 const socket = inject("socket");
+
+const winShow = ref(true);
+const closeWin = ()=>{
+  winShow.value = false;
+};
 
 socket.on("connection", (res) => {
   console.log("#connection: ", res);
@@ -67,15 +89,10 @@ const handleSendMessage = () => {
   socket.emit("message", "客户端发送的消息");
 };
 
-
-
-
-
-
 const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
 
 const list = [];
-for(let i=0;i<20;i++){
+for(let i=0;i<200;i++){
   list.push({
     name:"房间"+i,
     description:ID()
@@ -85,9 +102,12 @@ for(let i=0;i<20;i++){
 let rooms = computed(()=>{
   let key = search.value;
   let reg = RegExp(key);
-  return list.filter(v=>{
+  let result = list.filter(v=>{
     return !key||reg.test(v.name);
-  }).slice(0,7);
+  })
+  let i = (current.value - 1)*7;
+  total.value = Math.floor((result.length/7)*10);
+  return result.slice(i,i+7);
 });
 
 </script>
@@ -160,4 +180,18 @@ a{
   text-decoration: none;
   color: gray;
 }
+
+.form{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+}
+.form>div{
+    overflow:hidden;
+    margin-bottom: 35px;
+}
+
 </style>

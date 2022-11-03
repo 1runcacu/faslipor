@@ -15,18 +15,22 @@
         </div>
         <div class="body">
             <el-form class="form">
-                <el-input v-model="roomName"/>
-                <el-input v-model="roomID"/>
+                <vueInputVue v-model="roomName" hint="房间名称"/>
+                <vueInputVue v-model="description" hint="房间简介"/>
+                <el-button>快捷创建</el-button>
             </el-form>
         </div>
     </div>
-  </template>
-  
+</template>
+
+
+
 <script setup>
 import { ElPageHeader } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue';
+import vueInputVue from '@/components/vue-input.vue';
 
 const router = useRouter();
 
@@ -36,6 +40,7 @@ const onBack = () => {
 
 const roomName = ref("");
 const roomID = ref("");
+const description = ref("");
 
 </script>
 
@@ -67,17 +72,23 @@ const roomID = ref("");
     align-items: center;
 }
 .form{
-    width: 800px;
-    height: 600px;
+    width: 400px;
+    height: 300px;
     border-radius: 1rem;
     backdrop-filter: blur(5px);
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 1);
     box-shadow: rgb(204, 204, 204) 0px 0px 8px;
     padding: 20px;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
 }
-.form>.el-input{
-    margin-bottom: 20px;
+.form>div{
+    overflow:hidden;
+    margin-bottom: 35px;
 }
+
+
+
 </style>

@@ -1,28 +1,34 @@
-export function debounce(func, wait) {
-    let timeout;
-
+// 函数节流
+export const throttle = function(fn, delay){
+    var timer;
     return function () {
-        let context = this;
-        let args = arguments;
-
-        clearTimeout(timeout)
-        timeout = setTimeout(function(){
-            func.apply(context, args)
-        }, wait);
+        var _this = this;
+        var args = arguments;
+        if (timer) {
+            clearTimeout(timer);
+        }
+        timer = setTimeout(function () {
+            fn.apply(_this, args);
+        }, delay)
     }
 }
-
-export function throttle(func, wait) {
-    let context, args;
-    let previous = 0;
-  
-    return function() {
-        let now = +new Date();
-        context = this;
-        args = arguments;
-        if (now - previous > wait) {
-            func.apply(context, args);
-            previous = now;
+ 
+// 函数防抖
+export const shakeProof = (fn, time) => {
+    var timer;
+    return function(){
+        var _this = this;
+        var args = arguments;
+        if(timer){
+            clearTimeout(timer);
         }
+        timer = setTimeout(function(){
+            fn.apply(_this, args);// 用 apply 指向调用 shakeProof 方法的对象，相当于 _this.fn(args);
+        }, time);
     }
+}
+ 
+export default {
+    throttle,
+    shakeProof
 }

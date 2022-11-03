@@ -8,6 +8,7 @@ import 'element-plus/dist/index.css'
 import config from './api/config';
 import SocketIO from './api/socket';
 import {SOCKET} from '@/api/config';
+import registerDirectives from '@/components/directives'
 
 const app = createApp(App);
     app.config.globalProperties.$axios=axios;
@@ -16,6 +17,8 @@ const app = createApp(App);
     app.config.globalProperties.$message=ElMessage;
 
 axios.defaults.headers.common['Content-Type'] = 'application/json;charset=UTF-8';
+
+registerDirectives(app);
 
 app
     .use(router)
