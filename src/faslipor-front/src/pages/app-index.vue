@@ -20,8 +20,8 @@
           描述:{{item.description}}
         </el-card>
         <el-card :body-style="{ height: '100%' }">
-          <router-link to="/create">
-            <div id="addRoom">
+          <router-link to="/create" >
+            <div id="addRoom" >
               <el-icon><Plus/></el-icon>
             </div>
           </router-link>
@@ -122,5 +122,9 @@ let rooms = computed(()=>{
 }
 #addRoom:hover>.el-icon{
   color: #409EFF;
+}
+a{
+  text-decoration: none;
+  color: gray;
 }
 </style>
