@@ -1,12 +1,10 @@
 package fastclip.domain;
 
 public class HelloUid {
-    public String massage;
-    public int uid;
+    public String msg;
+    public int code;
     public String getMessage(){
-        return this.massage;
+        return this.msg;
     }
-    public int getUid(){
-        return this.uid;
-    }
+
 }
