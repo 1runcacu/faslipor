@@ -14,7 +14,7 @@
           <template #header>
             <div class="card-header">
               <span>{{item.name}}</span>
-              <el-button class="button" text>进入</el-button>
+              <el-button class="button" text @click="handleSendMessage">进入</el-button>
             </div>
           </template>
           描述:{{item.description}}
@@ -35,10 +35,34 @@
 <script setup>
 import { ElPagination } from 'element-plus';
 import {Search,Plus} from '@element-plus/icons-vue'
-import { ref,computed } from 'vue';
+import { ref,computed,inject } from 'vue';
 
 let search = ref("");
 let total = ref(1000);
+
+
+const socket = inject("socket");
+
+socket.on("connection", (res) => {
+  console.log("#connection: ", res);
+});
+
+socket.on("connected", (res) => {
+  console.log("#connected: ", res);
+});
+
+socket.on("message", (res) => {
+  console.log("#message: ", res);
+});
+
+const handleSendMessage = () => {
+  socket.emit("message", "{ text:  '客户端发送的消息'}");
+};
+
+
+
+
+
 
 const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
 
