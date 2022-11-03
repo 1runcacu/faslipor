@@ -35,7 +35,9 @@
 <script setup>
 import { ElPagination } from 'element-plus';
 import {Search,Plus} from '@element-plus/icons-vue'
-import { ref,computed,inject } from 'vue';
+import { ref,computed,inject,getCurrentInstance } from 'vue';
+
+const ctx = getCurrentInstance().appContext.config.globalProperties;
 
 let search = ref("");
 let total = ref(1000);
@@ -53,6 +55,10 @@ socket.on("connected", (res) => {
 
 socket.on("message", (res) => {
   console.log("#message: ", res);
+  ctx.$message({
+    message: res.msg,
+    type: 'success',
+  });
 });
 
 const handleSendMessage = () => {
