@@ -6,6 +6,8 @@ import axios from 'axios';
 import { ElButton,ElIcon,ElScrollbar,ElCard,ElNotification,ElMessage,ElInput } from 'element-plus';
 import 'element-plus/dist/index.css'
 import config from './api/config';
+import SocketIO from './api/socket';
+import {SOCKET} from '@/api/config';
 
 const app = createApp(App);
     app.config.globalProperties.$axios=axios;
@@ -23,4 +25,7 @@ app
     .use(ElScrollbar)
     .use(ElCard)
     .use(ElInput)
+    .use(SocketIO,{
+        connection: SOCKET
+    })
     .mount('#app')
