@@ -34,3 +34,6 @@
 2022/10/11 00:39:02 [notice] 7556#34144: signal process started
 2022/10/11 00:39:02 [error] 7556#34144: OpenEvent("Global\ngx_stop_16800") failed (2: The system cannot find the file specified)
 2022/10/11 00:39:02 [emerg] 35820#41712: bind() to 0.0.0.0:8888 failed (10013: An attempt was made to access a socket in a way forbidden by its access permissions)
+2022/11/03 00:56:25 [alert] 27744#29752: OpenEvent("ngx_master_32724") failed (2: The system cannot find the file specified)
+2022/11/03 00:58:10 [notice] 21908#24604: signal process started
+2022/11/03 00:58:10 [error] 21908#24604: OpenEvent("Global\ngx_stop_32724") failed (2: The system cannot find the file specified)
