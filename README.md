@@ -12,7 +12,7 @@
 
 ​		前端：vue|vuex|vue router|element plus| fabric|socket.io
 
-​		后端：springboot|redis
+​		后端：springboot|redis|netty-socketio
 
 
 
