@@ -64,7 +64,7 @@ socket.on("message", (res) => {
 });
 
 const handleSendMessage = () => {
-  socket.emit("message", "{ text:  '客户端发送的消息'}");
+  socket.emit("message", "客户端发送的消息");
 };
 
 
