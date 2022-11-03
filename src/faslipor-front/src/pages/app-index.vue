@@ -53,10 +53,12 @@ socket.on("connected", (res) => {
   console.log("#connected: ", res);
 });
 
+
+
 socket.on("message", (res) => {
   console.log("#message: ", res);
   ctx.$message({
-    message: res.msg,
+    message: res,
     type: 'success',
   });
 });
