@@ -20,11 +20,12 @@
           描述:{{item.description}}
         </el-card>
         <el-card :body-style="{ height: '100%' }">
-          <router-link to="/create" >
-            <div id="addRoom" >
-              <el-icon><Plus/></el-icon>
-            </div>
-          </router-link>
+          <!-- <router-link to="/create" >
+            
+          </router-link> -->
+          <div id="addRoom" @click="addRoomHandle">
+            <el-icon><Plus/></el-icon>
+          </div>
         </el-card>
       </div>
       <el-pagination background layout="prev, pager, next" :total="total" v-model:current-page="current"/>
@@ -62,7 +63,7 @@ const dragAble = ref(true);
 
 const socket = inject("socket");
 
-const winShow = ref(true);
+const winShow = ref(false);
 const closeWin = ()=>{
   winShow.value = false;
 };
@@ -88,6 +89,10 @@ socket.on("message", (res) => {
 const handleSendMessage = () => {
   socket.emit("message", "客户端发送的消息");
 };
+
+const addRoomHandle = ()=>{
+  winShow.value = true;
+}
 
 const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
 
@@ -176,10 +181,10 @@ let rooms = computed(()=>{
 #addRoom:hover>.el-icon{
   color: #409EFF;
 }
-a{
+/* a{
   text-decoration: none;
   color: gray;
-}
+} */
 
 .form{
     width: 100%;

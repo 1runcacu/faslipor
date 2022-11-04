@@ -29,6 +29,9 @@ app
     .use(ElCard)
     .use(ElInput)
     .use(SocketIO,{
-        connection: SOCKET
+        connection: SOCKET,
+        options:{
+            transports:['websocket']
+        }
     })
     .mount('#app')
