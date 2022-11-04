@@ -1,9 +1,0 @@
-fastclip/redis/RedisConfig.class
-META-INF/spring-configuration-metadata.json
-fastclip/controller/LoginController.class
-fastclip/redis/RedisService.class
-fastclip/redis/RedisPoolFactory.class
-fastclip/domain/User.class
-fastclip/ClipApplication.class
-fastclip/controller/DemoController.class
-fastclip/domain/Room.class
