@@ -48,35 +48,7 @@ public class LoginController {
         return R;
     }
 
-    @GetMapping("/{name}")
-    public String get(@PathVariable String name) {
-        Room newRoom = new Room();
-        Date time0 = new Date();
-        newRoom.id = ((Long) time0.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
-        newRoom.name = name;
-        //新建房间并加入
-        if(newRoom.name!=null&&newRoom.id!=null){
-                 newRoom.msg=200;
-              }
-        redisService.set(newRoom.id, newRoom);
-        List<Room> r = redisService.get("list", List.class);
-        if (r == null) {
-           r=new ArrayList();
-        }
-        r.add(newRoom);
-        redisService.set("list", r);
-        //新建用户并记录
-        User newUser = new User();
-        Date time1 = new Date();
-        newUser.id = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
-        newUser.state = "创建者";
-        if(newUser.id!=null&&newUser.state.equals("创建者")){
-            newUser.msg=200;
-        }
-        redisService.set(newUser.id,newUser);
-        log.info(JSON.toJSONString(redisService.get(newUser.id,User.class)));
-        return JSON.toJSONString(newRoom)+JSON.toJSONString(newUser);
-    }
+
 
 
 }

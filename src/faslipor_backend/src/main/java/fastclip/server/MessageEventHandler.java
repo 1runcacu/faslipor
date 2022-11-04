@@ -7,7 +7,9 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.annotation.OnConnect;
 import com.corundumstudio.socketio.annotation.OnDisconnect;
 import com.corundumstudio.socketio.annotation.OnEvent;
-import fastclip.domain.HelloUid;
+import fastclip.Service.QueryService;
+import fastclip.domain.Query;
+import fastclip.domain.Result;
 import fastclip.domain.Room;
 import fastclip.domain.User;
 import fastclip.redis.RedisService;
@@ -18,6 +20,22 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+/*
+功能	请求方法	链接	参数	返回参数
+获取所有房间信息	websocket	/login/list	无	json数组（房间信息）
+搜索（前端）
+创建房间	websocket
+加入房间	websocket	/login/	String	json数组（最近的全量帧及之后的增量帧及房间信息，个人信息）
+前端监听事件	数据格式	参数定义
+asset
+message	{msg,type}	type:success\
+stream
+reset
+后端监听事件	数据格式	参数定义
+query	{event,params}	3种event String类型(list,select,add)对应params分别是(null),(String rid),(String roomName,String brief)
+stream	{uid,rid,frame}	(String uid,String rid,String frame)
+reset	{uid,rid,frame}	(String uid,String rid,String frame)
+* */
 
 @Component
 @Slf4j
@@ -29,7 +47,17 @@ public class MessageEventHandler {
     @Autowired
     private RedisService redisService;
 
+    private QueryService queryService;
+
     public static ConcurrentMap<String, SocketIOClient> socketIOClientMap = new ConcurrentHashMap<>();
+    @OnEvent(value = "query")
+    public void onQuery(SocketIOClient client, AckRequest request, Query data) {
+
+        if(data.event.equals("add"))
+        {client.sendEvent("asset", queryService.addRoom(data.data.roomName,data.data.brief));}
+        //广播消息
+        //sendBroadcast();
+    }
 
     /**
      * 客户端连接的时候触发
@@ -59,8 +87,7 @@ public class MessageEventHandler {
         socketIOClientMap.put(mac, client);
         //回发消息
         log.info(String.valueOf(123));
-        HelloUid myData=new HelloUid();
-        myData.msg="hello";
+
         String message="d";
         List<Room> r = redisService.get("list", List.class);
         if (r == null) {
@@ -83,47 +110,6 @@ public class MessageEventHandler {
         log.info("客户端:" + client.getSessionId() + "断开连接");
     }
 
-    /**
-     * 客户端事件
-     *
-     * @param client  　客户端信息
-     * @param request 请求信息
-     * @param data    　客户端发送数据
-     */
-    @OnEvent(value = "message")
-    public void onEvent(SocketIOClient client, AckRequest request, String data) {
-        log.info("发来消息：" + data);
-        Room newRoom = new Room();
-        Date time0 = new Date();
-        newRoom.id = ((Long) time0.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
-        newRoom.name = data;
-        //新建房间并加入
-        if(newRoom.name!=null&&newRoom.id!=null){
-            newRoom.msg=200;
-        }
-        redisService.set(newRoom.id, newRoom);
-        List<Room> r = redisService.get("list", List.class);
-        if (r == null) {
-            r=new ArrayList();
-        }
-        r.add(newRoom);
-        redisService.set("list", r);
-        //新建用户并记录
-        User newUser = new User();
-        Date time1 = new Date();
-        newUser.id = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
-        newUser.state = "创建者";
-        if(newUser.id!=null&&newUser.state.equals("创建者")){
-            newUser.msg=200;
-        }
-        redisService.set(newUser.id,newUser);
-        //回发消息
-        HelloUid myData=new HelloUid();
-        myData.msg="hello"+data;
-        client.sendEvent("message", JSON.toJSONString(newRoom)+JSON.toJSONString(newUser));
-        //广播消息
-       //sendBroadcast();
-    }
 
     /**
      * 广播消息
