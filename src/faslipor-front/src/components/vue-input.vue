@@ -24,8 +24,8 @@ export default{
 <style>
 
 .wrapper{
-    width: 50%;
-    background-color: white;
+    width: calc(100% - 30px);
+    background-color: rgba(255, 255, 255, 0.2);
     padding: 10px;
     box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
     border-radius: 8px;
@@ -42,14 +42,14 @@ export default{
     border-radius: 0 10px 0 0;
     border-bottom: 2px solid silver;
     font-size: 17px;
-    background-color: rgba(255,255,255,0.9);
+    background-color: rgba(255,255,255,0);
     outline: none;
 }
 .input-data input:focus ~ label,
 .input-data input:valid ~ label{
     transform: translateY(-20px);
     font-size: 15px;
-    color: #572e2e;
+    color: #421a1a;
 }
 .wrapper .input-data label{
     position: absolute;
@@ -64,7 +64,7 @@ export default{
     bottom: 0px;
     height: 2px;
     width: 100%;
-    background-color: white;
+    background-color: rgba(255, 255, 255, 0);
 }
 .input-data .underline:before{
     position: absolute;

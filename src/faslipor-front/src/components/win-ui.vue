@@ -10,7 +10,7 @@
           <slot name="head" />
           <div style="margin-left:auto;"></div>
           <el-icon @click="closehandle"><Minus /></el-icon>
-          <el-icon  @click="fullScreen"><FullScreen /></el-icon>
+          <el-icon  @click="fullScreen" v-if="resizeAble"><FullScreen /></el-icon>
           <el-icon class="close" @click="closehandle"><Close/></el-icon>
         </div>
         <div class="drag-main" :style="mainStyle">

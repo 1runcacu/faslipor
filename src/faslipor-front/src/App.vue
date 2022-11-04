@@ -5,6 +5,20 @@
 
 <script setup>
 import VueSnow from '@/components/vue-snow.vue';
+
+import { inject,getCurrentInstance } from "vue";
+
+
+const ctx = getCurrentInstance().appContext.config.globalProperties;
+const socket = inject("socket");
+
+socket.on("message", (res={}) => {
+    console.log("message:",res);
+    ctx.$message(res);
+});
+
+
+
 </script>
 
 <style>

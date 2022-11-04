@@ -10,18 +10,19 @@
         style="width: 300px;"
       />
       <div id="rooms">
-        <el-card v-for="item in rooms">
+        <el-card :body-style="{ height: '100%' }" v-for="(item,index) in rooms" :class="{disabled:!item.state||(item.stats>=item.limit)}" :key="index" :disabled="!item.state||(item.stats>=item.limit)">
           <template #header>
             <div class="card-header">
-              <span>{{item.name}}</span>
-              <el-button class="button" text @click="handleSendMessage">进入</el-button>
+              <span><b>{{item.name}}</b><div style="font-size:0.2rem;">[{{item.stats}}/{{item.limit}}]</div></span>
+              <el-button type="success" class="button" text @click="handleSendMessage(item.description)" v-if="item.state&&(item.stats<item.limit)">进入</el-button>
             </div>
           </template>
-          描述:{{item.description}}
+          <div id="Room">
+            &nbsp;&nbsp;&nbsp;&nbsp;{{item.description+item.description+item.description+item.description}}
+          </div>
         </el-card>
         <el-card :body-style="{ height: '100%' }">
           <!-- <router-link to="/create" >
-            
           </router-link> -->
           <div id="addRoom" @click="addRoomHandle">
             <el-icon><Plus/></el-icon>
@@ -30,9 +31,9 @@
       </div>
       <el-pagination background layout="prev, pager, next" :total="total" v-model:current-page="current"/>
     </div>
-    <winUI :resizeAble="false" @close="closeWin" :closeShow="winShow">
+    <winUI :resizeAble="false" @close="closeWin" :closeShow="winShow" width="30vh" height="30vh">
       <template #head>
-          <div><b>快捷创建</b></div>
+          <div><b>房间创建</b></div>
         </template>
       <el-form class="form" v-drag="dragAble">
         <vueInputVue v-model="roomName" hint="房间名称"/>
@@ -44,11 +45,12 @@
 </template>
 
 <script setup>
-import { ElPagination } from 'element-plus';
+import { ElPagination,ElMessageBox } from 'element-plus';
 import {Search,Plus} from '@element-plus/icons-vue'
-import { ref,computed,inject,getCurrentInstance } from 'vue';
+import { onMounted,ref,computed,inject,getCurrentInstance } from 'vue';
 import vueInputVue from '@/components/vue-input.vue';
 import winUI from '@/components/win-ui.vue';
+import { useRouter } from 'vue-router'
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 
@@ -68,26 +70,18 @@ const closeWin = ()=>{
   winShow.value = false;
 };
 
-socket.on("connection", (res) => {
-  console.log("#connection: ", res);
-});
+const router = useRouter();
 
-socket.on("connected", (res) => {
-  console.log("#connected: ", res);
-});
-
-
-
-socket.on("message", (res) => {
-  console.log("#message: ", res);
-  ctx.$message({
-    message: res,
-    type: 'success',
-  });
-});
-
-const handleSendMessage = () => {
-  socket.emit("message", "客户端发送的消息");
+const handleSendMessage = (evt) => {
+  ElMessageBox.confirm('确定加入此房间?',"", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+      })
+    .then(v=>{
+      console.log(evt)
+      router.push({name:"panel"});
+    }).catch(()=>{});
+  // socket.emit("message", "客户端发送的消息");
 };
 
 const addRoomHandle = ()=>{
@@ -97,10 +91,14 @@ const addRoomHandle = ()=>{
 const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
 
 const list = [];
-for(let i=0;i<200;i++){
+for(let i=0;i<30;i++){
   list.push({
+    rid:ID(),
     name:"房间"+i,
-    description:ID()
+    state:Math.random()>0.2,
+    description:ID(),
+    stats:3,
+    limit:10
   });
 }
 
@@ -114,6 +112,35 @@ let rooms = computed(()=>{
   total.value = Math.floor((result.length/7)*10);
   return result.slice(i,i+7);
 });
+
+onMounted(() => {
+  socket.emit("query",{
+    event:"list"
+  });
+});
+
+// const result = {
+//   event:"list",
+//   state:200,
+//   data:[
+//     {
+//       rid:"xxx",
+//       name:"xxx",
+//       state:"xxx",
+//       description:"xxx",
+//       stats:233,
+//       limit:10
+//     },{
+//       rid:"xxx",
+//       name:"xxx",
+//       state:"xxx",
+//       description:"xxx",
+//       stats:233,
+//       limit:10
+//     }
+//   ]
+// }
+
 
 </script>
 
@@ -161,12 +188,25 @@ let rooms = computed(()=>{
 .el-card:hover{
   box-shadow: gray 0px 0px 10px;
   transform: scale(1.05,1.05);
+  background-color: #132d59;
+  transition-duration: 500ms;
+  color: white;
+}
+.disabled:hover{
+  background-color: #910314 !important;
 }
 
 .card-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+#Room{
+  height: calc(100% - 40px);
+  overflow: hidden;
+  word-wrap: break-word;
+  font-size: 12px;
 }
 
 #addRoom{
@@ -184,6 +224,13 @@ let rooms = computed(()=>{
 /* a{
   text-decoration: none;
   color: gray;
+} */
+
+.label{
+  font-size: small;
+}
+/* b{
+  white-space:nowrap;
 } */
 
 .form{

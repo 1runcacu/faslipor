@@ -1,21 +1,18 @@
 import { createWebHistory, createRouter } from "vue-router";
 
-import create from '@/pages/app-create.vue';
 import index from '@/pages/app-index.vue';
-import canvas from '@/pages/app-canvas.vue';
+import panel from '@/pages/app-panel.vue';
 
 const routes = [
   {
+    name:"index",
     path: "/",
     component:index
   },
   {
-    path: "/create",
-    component:create
-  },
-  {
+    name:"panel",
     path: "/panel",
-    component:canvas
+    component:panel
   }
 ];
 
@@ -25,7 +22,16 @@ const router = createRouter({
 });
 
 router.beforeEach((to,from,next)=>{
-  next();
+  // next();
+  if(to.name==="panel"){
+    if(from&&from.name==="index"){
+      next();
+    }else{
+      next({name:"index"});
+    }
+  }else{
+    next();
+  }
 })
 
 export default router;
