@@ -68,7 +68,7 @@ public class MessageEventHandler {
 
         }
         message = String.valueOf(JSON.parseArray(String.valueOf(r)));
-        client.sendEvent("message", message);
+        client.sendEvent("message", r);
         //sendBroadcast();
         log.info("客户端:" + client.getSessionId() + "已连接,mac=" + mac);
     }

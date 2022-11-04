@@ -1,0 +1,15 @@
+fastclip/redis/RedisConfig.class
+fastclip/server/myMessageHandler.class
+META-INF/spring-configuration-metadata.json
+fastclip/controller/LoginController.class
+fastclip/server/ServerInitiazer.class
+fastclip/controller/DemoController.class
+fastclip/domain/Room.class
+fastclip/config/NettySocketioConfig.class
+fastclip/domain/HelloUid.class
+fastclip/redis/RedisService.class
+fastclip/config/WebMvcConfig.class
+fastclip/redis/RedisPoolFactory.class
+fastclip/NettySocketioApplication.class
+fastclip/server/MessageEventHandler.class
+fastclip/domain/User.class

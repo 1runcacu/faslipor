@@ -13,7 +13,7 @@ public class NettySocketioConfig {
     @Bean
     public SocketIOServer socketIOServer() {
         com.corundumstudio.socketio.Configuration config = new com.corundumstudio.socketio.Configuration();
-        config.setHostname("localhost");
+        //config.setHostname("localhost");
         config.setPort(8102);
 
         SocketIOServer server = new SocketIOServer(config);

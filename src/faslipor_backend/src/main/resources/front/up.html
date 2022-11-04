@@ -1,96 +1,74 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>websocket-java-socketio</title>
+  <script src="https://cdn.bootcss.com/socket.io/2.2.0/socket.io.js"></script>
 </head>
 <body>
-
-<div>发送消息:</div>
-<input type="text" id="msgContent"/>
-<input type="button" value="点我发送" onclick="CHAT.chat()"/>
-
-<div>接受消息：</div>
-<div id="receiveMsg" style="background-color: gainsboro;"></div>
-
-
-
-  <script type="text/javascript" src="${ctx}/components/socketio/socket.io.js">
-
-    alert(123);
-    $(function() {
-      connectQuotation($("#global_uid").val(), function() {
-        socket.on("pushQuotation", function(message) {
-          if (message.type == "dealOrder") {
-            var msg = message.response.result;
-            // 输出服务端消息
-            YUNM.debug(msg);
-          }
-        });
-      });
-    });
-
-    function connectQuotation(uid, callback) {
-      // 链接行情server
-      socket = io.connect('http://localhost:8102');
-      // 如果用户在web端登陆，那么发送握手请求
-      if (uid) {
-        // 连接上server后
-        socket.on('connect', function() {
-          // 发送握手请求
-          var jsonObject = {
-            uid : parseInt(uid),
-            message : "hello"
-          };
-          this.emit('helloevent', jsonObject);
-
-          this.on('hellopush', function(data, ackServerCallback, arg1) {
-            // base64转码的数据，可忽视
-            YUNM.session = {
-              sessionId : $.base64.atob(data.sessionId),
-              time : $.base64.atob(data.time)
-            };
-            if (ackServerCallback) {
-              ackServerCallback('server message was delivered to client!');
-            }
-          });
-        });
-      }
-
-      // 如果web端session超时，socket断开，10分钟扫描一次
-      int = window.setInterval(function() {
-        // 我是通过ajax判断session超时的，你也可以通过其他方式
-        $.ajax({
-          type : 'POST',
-          url : common.ctx + "/getSessionTimeout",
-          dataType : "json",
-          cache : false,
-          success : function(json) {
-            var timeout = parseInt(json.message);
-            // session超时后，socket断开，服务端就可以监听到释放资源
-            if (timeout == 0) {
-              socket.disconnect();
-            }
-          },
-          error : function() {
-            socket.disconnect();
-            // 清除
-            window.clearInterval(int);
-          }
-
-        });
-      }, YUNM._set.interval);
-
-      callback();
-    }
-</script>
-
-
-
-
+<h1>Socket.io Test</h1>
+<div><p id="status">Waiting for input</p></div>
+<div><p id="message">hello world!</p></div>
+<button id="connect" onClick='connect()'/>Connect</button>
+<button id="disconnect" onClick='disconnect()'>Disconnect</button>
+<button id="send" onClick='send()'/>Send Message</button>
 </body>
-</html>
 
+<script type="text/javascript">
+
+  /**
+   * 前端js的 socket.emit("事件名","参数数据")方法，是触发后端自定义消息事件的时候使用的,
+   * 前端js的 socket.on("事件名",匿名函数(服务器向客户端发送的数据))为监听服务器端的事件
+   **/
+  var socket = io.connect("http://localhost:8103?mac=2");
+  var firstconnect = true;
+
+  function connect() {
+    if(firstconnect) {
+
+      //socket.on('reconnect', function(){ status_update("Reconnected to Server"); });
+      //socket.on('reconnecting', function( nextRetry ){ status_update("Reconnecting in "
+      //+ nextRetry + " seconds"); });
+      //socket.on('reconnect_failed', function(){ message("Reconnect Failed"); });
+      //firstconnect = false;
+    } else {
+      socket.socket.reconnect();
+    }
+  }
+
+  //监听服务器连接事件
+  socket.on('connect', function(){ status_update("Connected to Server"); });
+  //监听服务器关闭服务事件
+  socket.on('disconnect', function(){ status_update("Disconnected from Server"); });
+  //监听服务器端发送消息事件
+  socket.on('message', function(data) {
+    message(data)
+    //console.log("服务器发送的消息是："+data);
+  });
+
+  //断开连接
+  function disconnect() {
+    socket.disconnect();
+  }
+
+  function message(data) {
+    document.getElementById('message').innerHTML = "Server says: " + data;
+  }
+
+  function status_update(txt){
+    document.getElementById('status').innerHTML = txt;
+  }
+
+  function esc(msg){
+    return msg.replace(/</g, '<').replace(/>/g, '>');
+  }
+  //点击发送消息触发
+  function send() {
+    console.log("点击了发送消息，开始向服务器发送消息")
+    var msg = "我很好的,是的．";
+    socket.emit('messageevent', {msgContent: msg});
+  };
+</script>
+</html>
 
