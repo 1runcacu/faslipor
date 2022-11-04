@@ -35,4 +35,4 @@ app
             transports:['websocket']
         }
     })
-    .mount('#app')
+    .mount('#app');
