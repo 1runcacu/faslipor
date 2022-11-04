@@ -31,6 +31,7 @@ app
     .use(SocketIO,{
         connection: SOCKET,
         options:{
+            query: 'userName=test&appKey=test&roomId=rabbit',
             transports:['websocket']
         }
     })

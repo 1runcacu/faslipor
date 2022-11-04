@@ -1,6 +1,6 @@
 .DS_Store
 node_modules
-
+/dist/js/*.map
 .lnk
 
 # local env files
