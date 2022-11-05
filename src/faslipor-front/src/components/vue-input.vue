@@ -1,7 +1,7 @@
 <template>
     <div class="wrapper">
         <div class="input-data">
-            <input type="text" required="" v-model="modelValue"/>
+            <input type="text" required="" v-model="buffer"/>
             <div class="underline"></div>
             <label>{{hint}}</label>
         </div>
@@ -9,13 +9,33 @@
 </template>
 
 <script>
+
 export default{
+    data(){
+        return {
+            buf:""
+        };
+    },
+    computed:{
+        buffer:{
+            get:function(){
+                return this.buf;
+            },
+            set:function(value){
+                this.buf=value||"";
+                this.$emit('input',value||"");
+            }
+        }
+    },
     props:{
-        modelValue: String,
+        value: String,
         hint:{
             type:String,
             default:""
         }
+    },
+    mounted(){
+        this.buf=this.value;
     }
 }
 

@@ -36,9 +36,9 @@
           <div><b>房间创建</b></div>
         </template>
       <el-form class="form" v-drag="dragAble">
-        <vueInputVue v-model="roomName" hint="房间名称"/>
-        <vueInputVue v-model="description" hint="房间简介"/>
-        <el-button>快捷创建</el-button>
+        <vueInputVue value="FASLIPOR" @input="inRoomName" hint="房间名称"/>
+        <vueInputVue @input="inDescription" hint="房间简介"/>
+        <el-button :disabled="!lock" @click="createRoomHandle">快捷创建</el-button>
       </el-form>
     </winUI>
   </div>
@@ -51,6 +51,7 @@ import { onMounted,ref,computed,inject,getCurrentInstance } from 'vue';
 import vueInputVue from '@/components/vue-input.vue';
 import winUI from '@/components/win-ui.vue';
 import { useRouter } from 'vue-router'
+import { useStore } from 'vuex';
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 
@@ -58,12 +59,13 @@ const search = ref("");
 const total = ref(1);
 const current = ref(1);
 
-const roomName = ref("");
-const description = ref("");
+let roomName = "FASLIPOR";
+let description = "";
 
 const dragAble = ref(true);
 
 const socket = inject("socket");
+const store = useStore();
 
 const winShow = ref(false);
 const closeWin = ()=>{
@@ -71,6 +73,11 @@ const closeWin = ()=>{
 };
 
 const router = useRouter();
+
+let lock = ref(false);
+
+const inRoomName = value=>roomName=typeof(value)==='string'?value:"";
+const inDescription = value=>description=typeof(value)==='string'?value:"";
 
 const handleSendMessage = (evt) => {
   ElMessageBox.confirm('确定加入此房间?',"", {
@@ -88,24 +95,50 @@ const addRoomHandle = ()=>{
   winShow.value = true;
 }
 
+const createRoomHandle = ()=>{
+  if(roomName!=""){
+    ElMessageBox.confirm(`确定创建【${roomName}】?`,"", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+      })
+    .then(v=>{
+      lock.value = false;
+      socket.emit("query",{
+        event:"add",
+        params:{
+          roomName,
+          description
+        }
+      });
+    }).catch(()=>{});
+  }else{
+    ctx.$message({
+      message:"房间名称不为空",
+      type:"error"
+    });
+  }
+}
+
+
+
 const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
 
-const list = [];
-for(let i=0;i<30;i++){
-  list.push({
-    rid:ID(),
-    name:"房间"+i,
-    state:Math.random()>0.2,
-    description:ID(),
-    stats:3,
-    limit:10
-  });
-}
+// const list = [];
+// for(let i=0;i<30;i++){
+//   list.push({
+//     rid:ID(),
+//     name:"房间"+i,
+//     state:Math.random()>0.2,
+//     description:ID(),
+//     stats:3,
+//     limit:10
+//   });
+// }
 
 let rooms = computed(()=>{
   let key = search.value;
   let reg = RegExp(key);
-  let result = list.filter(v=>{
+  let result = store.state.rooms.filter(v=>{
     return !key||reg.test(v.name);
   })
   let i = (current.value - 1)*7;
@@ -117,6 +150,7 @@ onMounted(() => {
   socket.emit("query",{
     event:"list"
   });
+  lock.value = true;
 });
 
 // const result = {
