@@ -9,9 +9,7 @@ import com.corundumstudio.socketio.annotation.OnDisconnect;
 import com.corundumstudio.socketio.annotation.OnEvent;
 import fastclip.Service.QueryService;
 import fastclip.domain.Query;
-import fastclip.domain.Result;
 import fastclip.domain.Room;
-import fastclip.domain.User;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,14 +45,26 @@ public class MessageEventHandler {
     @Autowired
     private RedisService redisService;
 
+    @Autowired
     private QueryService queryService;
 
     public static ConcurrentMap<String, SocketIOClient> socketIOClientMap = new ConcurrentHashMap<>();
+
+
     @OnEvent(value = "query")
     public void onQuery(SocketIOClient client, AckRequest request, Query data) {
-
+          log.info("query");
         if(data.event.equals("add"))
-        {client.sendEvent("asset", queryService.addRoom(data.data.roomName,data.data.brief));}
+        { log.info("add");
+            client.sendEvent("redirect", queryService.addRoom(data.params.roomName,data.params.description));}
+        if(data.event.equals("list")){
+            log.info("list");
+            client.sendEvent("asset",queryService.list());
+        }
+        if(data.event.equals("select")){
+            log.info("select");
+            client.sendEvent("redirect",queryService.select(data.params.rid));
+        }
         //广播消息
         //sendBroadcast();
     }
@@ -71,23 +81,8 @@ public class MessageEventHandler {
             log.info("client null");
         }
        String mac = client.getHandshakeData().getSingleUrlParam("roomId");
-        log.info(client.getHandshakeData().toString());
-        log.info(String.valueOf(client.getHandshakeData().getAddress()));
-        Set<String> set=client.getHandshakeData().getUrlParams().keySet();
-        for (String key : set) {
-           log.info(key);
-           log.info(client.getHandshakeData().getSingleUrlParam(key));
-        }
-        //String mac="transport";
-        if(mac==null){
-            log.info("mac null");
-        }
-        //存储SocketIOClient，用于发送消息
-        log.info("123");
-        socketIOClientMap.put(mac, client);
-        //回发消息
-        log.info(String.valueOf(123));
 
+        socketIOClientMap.put(mac, client);
         String message="d";
         List<Room> r = redisService.get("list", List.class);
         if (r == null) {
@@ -95,7 +90,7 @@ public class MessageEventHandler {
 
         }
         message = String.valueOf(JSON.parseArray(String.valueOf(r)));
-        client.sendEvent("message", r);
+        //client.sendEvent("message", r);
         //sendBroadcast();
         log.info("客户端:" + client.getSessionId() + "已连接,mac=" + mac);
     }

@@ -1,6 +1,6 @@
 package fastclip.domain;
 
 public class User {
-    public String id;
+    public String uid;
     public String state;
 }

@@ -1,5 +1,6 @@
 package fastclip.Service;
 
+import fastclip.domain.Redirect;
 import fastclip.domain.Result;
 import fastclip.domain.Room;
 import fastclip.domain.User;
@@ -16,7 +17,7 @@ public class QueryService {
 
     @Autowired
     RedisService redisService;
-    public Result addRoom(String roomName,String brief){
+    public Redirect addRoom(String roomName,String brief){
         //新建房间
         Room newRoom = new Room();
         Date time0 = new Date();
@@ -29,7 +30,7 @@ public class QueryService {
         //新建用户
         User newUser = new User();
         Date time1 = new Date();
-        newUser.id = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
+        newUser.uid = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
         newUser.state = "创建者";
         //加入房间列表
         List<Room> r = redisService.get("list", List.class);
@@ -39,15 +40,49 @@ public class QueryService {
         r.add(newRoom);
         redisService.set("list", r);
         //名单
-        newRoom.addName(newUser.id);
+        List<String> nameList=new ArrayList<>();
+        nameList.add(newUser.uid);
         redisService.set(newRoom.getId(), newRoom);
-        redisService.set(newUser.id,newUser);
-        Result result=new Result();
-        result.event="add";
-        result.state="200";
-        result.user=newUser;
-        result.room=newRoom;
-        return result;
+        redisService.set(newRoom.getId()+"nameList",nameList);
+        redisService.set(newUser.uid,newUser);
+        Redirect redirect=new Redirect();
+        redirect.path="/panel";
+        redirect.params.user=newUser;
+        redirect.params.room=newRoom;
+        return redirect;
+    }
+
+    public Result list(){
+        List<Room> r = redisService.get("list", List.class);
+        if (r == null) {
+            r=new ArrayList();
+        }
+        Result myResult=new Result();
+        myResult.data=r;
+        myResult.event="list";
+        myResult.state=200;
+        return myResult;
+    }
+
+    public Redirect select(String rid){
+        Redirect redirect=new Redirect();
+        Room myRoom=redisService.get(rid,Room.class);
+        if(myRoom==null){
+            redirect.params.state=404;
+            return redirect;
+        }
+        if(!myRoom.getState()){
+            redirect.params.state=403;
+            return redirect;
+        }
+        /*if(myRoom.getLimit()==myRoom.getStats()){
+
+        }*/
+        User newUser = new User();
+        Date time1 = new Date();
+        newUser.uid = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
+        newUser.state = "创建者";
+        return redirect;
     }
 
 }

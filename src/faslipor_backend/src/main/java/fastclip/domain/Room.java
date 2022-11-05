@@ -13,7 +13,6 @@ public class Room {
     private String description;
     private int stats;
     private int limit;
-    private List<String> nameList;
 
     public String getId() {
         return rid;
@@ -37,16 +36,6 @@ public class Room {
 
     public void setMsg(String msg) {
         this.description = msg;
-    }
-
-    public List<String> getNameList() {
-        return nameList;
-    }
-
-    public void addName(String uid) {
-        if(nameList==null)
-            nameList=new ArrayList<>();
-        nameList.add(uid);
     }
 
     public boolean getState() {

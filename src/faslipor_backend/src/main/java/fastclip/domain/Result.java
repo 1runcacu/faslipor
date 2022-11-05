@@ -4,8 +4,8 @@ import java.util.List;
 
 public class Result {
     public String event;
-    public String state;
+    public int state;
     public Room room;
     public User user;
-    public List<Room> list;
+    public List<Room> data;
 }
