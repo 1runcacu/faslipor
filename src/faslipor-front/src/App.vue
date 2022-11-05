@@ -1,11 +1,12 @@
 <template>
-  <VueSnow></VueSnow>
+  <VueSnow/>
   <router-view />
+  <vueBookVue/>
 </template>
 
 <script setup>
 import VueSnow from '@/components/vue-snow.vue';
-
+import vueBookVue from '@/components/vue-book.vue';
 import { inject,getCurrentInstance } from "vue";
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex';
@@ -42,14 +43,14 @@ socket.on("redirect", (res={}) => {
 </script>
 
 <style>
-  html,body{
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    box-sizing: border-box;
-    background-color: #F5F7F9;
-  }
+html,body{
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  background-color: #F5F7F9;
+}
 body {
   height: 100vh;
   background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
@@ -57,8 +58,23 @@ body {
   filter: drop-shadow(0 0 10px white);
 }
 
-  #app {
-    width: 100%;
-    height: 100%;
-  }
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+  /* vue渐入渐出样式 */
+.drag-win-enter-from,
+.drag-win-leave-to {
+  opacity: 0;
+  transform: scale(0);
+}
+.drag-win-enter-to,
+.drag-win-leave-from {
+  opacity: 1;
+}
+.drag-win-enter-active,
+.drag-win-leave-active {
+  transition: all 0.5s ease;
+}
 </style>

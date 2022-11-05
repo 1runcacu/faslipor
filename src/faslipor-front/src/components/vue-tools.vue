@@ -3,17 +3,9 @@
       <div
         class="drag-dialog ban-select-font"
         ref="dragWin"
-        v-resize="resizeAble"
-        v-if="closeShow"
+        v-resize="false"
       >
-        <div class="drag-bar" :style="headStyle" v-drag="dragAble" v-if="head=='true'">
-            <slot name="head" />
-            <div style="margin-left:auto;"></div>
-            <el-icon @click="closehandle"><Minus /></el-icon>
-            <el-icon  @click="fullScreen" v-if="resizeAble"><FullScreen /></el-icon>
-            <el-icon class="close" @click="closehandle"><Close/></el-icon>
-        </div>
-        <div class="drag-main" :style="mainStyle">
+        <div class="drag-main" :style="mainStyle" v-drag="dragAble">
           <slot/>
         </div>
       </div>
@@ -36,31 +28,19 @@ const recordBox = {
 let dragWin = null;
 
 export default{
-    name:'win-ui',
+    name:'tools-ui',
     components:{
         ElIcon,
         FullScreen,Close,Minus
     },
     props:{
-        head:{
-            type:String,
-            default:"true"
-        },
         width:{
             type:String,
-            default:"500px"
+            default:"50px"
         },
         height:{
             type:String,
-            default:"40vh"
-        },
-        minWidth:{
-            type:String,
-            default:"200px"
-        },
-        minHeight:{
-            type:String,
-            default:"200px"
+            default:"80vh"
         },
         headHeight:{
             type:String,
@@ -79,14 +59,6 @@ export default{
             default:true
         },
         dragAble:{
-            type:Boolean,
-            default:true
-        },
-        closeShow:{
-            type:Boolean,
-            default:true
-        },
-        fullShow:{
             type:Boolean,
             default:true
         }
@@ -155,8 +127,6 @@ export default{
     padding: 8px;
     overflow: hidden;
     color: #000;
-    min-width: v-bind("minWidth");
-    min-height: v-bind("minHeight");
     border: 1px solid black;
     border-radius:10px 0 10px 0;
     backdrop-filter: blur(5px);
@@ -199,5 +169,20 @@ export default{
     overflow: auto;
     font-size: 13px;
     line-height: 1.6;
+}
+  
+  /* vue渐入渐出样式 */
+.drag-win-enter-from,
+.drag-win-leave-to {
+    opacity: 0;
+    transform: scale(0);
+}
+.drag-win-enter-to,
+.drag-win-leave-from {
+    opacity: 1;
+}
+.drag-win-enter-active,
+.drag-win-leave-active {
+    transition: all 0.5s ease;
 }
 </style>
