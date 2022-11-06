@@ -34,6 +34,14 @@ socket.on("asset", (res={}) => {
     }
 });
 
+socket.on("disconnect",res=>{
+  ctx.$log({message:"连接断开",type:"error"});
+});
+
+socket.on("reconnect",res=>{
+  ctx.$log({message:"重连成功",type:"success"});
+});
+
 socket.on("redirect", (res={}) => {
     console.log("redirect:",res);
     store.commit("setParams",res.params);
