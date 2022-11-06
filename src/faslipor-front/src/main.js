@@ -10,6 +10,8 @@ import SocketIO from './api/socket';
 import {SOCKET} from '@/api/config';
 import registerDirectives from '@/components/directives'
 
+//https://antonreshetov.github.io/vue-unicons/
+
 const app = createApp(App);
     app.config.globalProperties.$axios=axios;
     app.config.globalProperties.$app_config=config;

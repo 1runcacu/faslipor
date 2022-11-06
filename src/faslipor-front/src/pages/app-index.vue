@@ -14,7 +14,7 @@
           <template #header>
             <div class="card-header">
               <span><b>{{item.name}}</b><div style="font-size:0.2rem;">[{{item.stats}}/{{item.limit}}]</div></span>
-              <el-button type="success" class="button" text @click="handleSendMessage(item.description)" v-if="item.state&&(item.stats<item.limit)">进入</el-button>
+              <el-button :disabled="!lock" type="success" class="button" text @click="handleSendMessage(item)" v-if="item.state&&(item.stats<item.limit)">进入</el-button>
             </div>
           </template>
           <div id="Room">
@@ -32,7 +32,7 @@
       <el-pagination background layout="prev, pager, next" :total="total" v-model:current-page="current"/>
     </div>
     <winUI :resizeAble="false" @close="closeWin" :closeShow="winShow" width="30vh" height="30vh">
-      <template #head>
+        <template #head>
           <div><b>房间创建</b></div>
         </template>
       <el-form class="form" v-drag="dragAble">
@@ -42,10 +42,11 @@
       </el-form>
     </winUI>
   </div>
+  
 </template>
 
 <script setup>
-import { ElPagination,ElMessageBox } from 'element-plus';
+import { ElPagination,ElMessageBox,ElAffix } from 'element-plus';
 import {Search,Plus} from '@element-plus/icons-vue'
 import { onMounted,ref,computed,inject,getCurrentInstance } from 'vue';
 import vueInputVue from '@/components/vue-input.vue';
@@ -76,8 +77,8 @@ const router = useRouter();
 
 let lock = ref(false);
 
-const inRoomName = value=>roomName=typeof(value)==='string'?value:"";
-const inDescription = value=>description=typeof(value)==='string'?value:"";
+const inRoomName = value=>roomName=typeof(value)==='string'?value:roomName;
+const inDescription = value=>description=typeof(value)==='string'?value:description;
 
 const handleSendMessage = (evt) => {
   ElMessageBox.confirm('确定加入此房间?',"", {
@@ -86,7 +87,14 @@ const handleSendMessage = (evt) => {
       })
     .then(v=>{
       console.log(evt)
-      router.push({name:"panel"});
+      // router.push({name:"panel"});
+      lock.value = false;
+      socket.emit("query",{
+        event:"select",
+        params:{
+          rid:evt.rid
+        }
+      });
     }).catch(()=>{});
   // socket.emit("message", "客户端发送的消息");
 };
@@ -96,6 +104,7 @@ const addRoomHandle = ()=>{
 }
 
 const createRoomHandle = ()=>{
+  console.log(roomName)
   if(roomName!=""){
     ElMessageBox.confirm(`确定创建【${roomName}】?`,"", {
         confirmButtonText: "确定",
@@ -137,7 +146,7 @@ const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
 
 let rooms = computed(()=>{
   let key = search.value;
-  let reg = RegExp(key);
+  let reg = RegExp(key,'i');
   let result = store.state.rooms.filter(v=>{
     return !key||reg.test(v.name);
   })
@@ -188,7 +197,8 @@ onMounted(() => {
 }
 #card{
   height: 100%;
-  width: calc(100% - 600px);
+  width: 80%;
+  /* width: calc(100% - 600px); */
   display: flex;
   flex-direction: column;
   align-items: center;
