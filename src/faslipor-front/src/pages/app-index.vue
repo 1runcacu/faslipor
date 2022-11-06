@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { ElPagination,ElMessageBox,ElAffix } from 'element-plus';
+import { ElPagination,ElMessageBox } from 'element-plus';
 import {Search,Plus} from '@element-plus/icons-vue'
 import { onMounted,ref,computed,inject,getCurrentInstance } from 'vue';
 import vueInputVue from '@/components/vue-input.vue';

@@ -13,6 +13,10 @@ const routes = [
     name:"panel",
     path: "/panel",
     component:panel
+  },
+  {
+    path:"/:pathMatch(.*)*",
+    redirect: '/'
   }
 ];
 

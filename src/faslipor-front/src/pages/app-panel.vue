@@ -76,29 +76,46 @@
 
 
 <script setup>
-import { ElPageHeader,ElCollapse,ElCollapseItem,ElSelect,ElOption } from 'element-plus';
+import { ElPageHeader,ElCollapse,ElCollapseItem,ElMessageBox} from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { inject, ref } from 'vue';
+import { inject, ref,computed } from 'vue';
 import { onMounted } from 'vue'
 import { fabric } from 'fabric'
 import vueConsoleVue from '@/components/vue-console.vue';
 import vueOpener from '@/components/vue-opener.vue'
+import { useStore } from 'vuex';
 
 const socket = inject("socket");
-
+const store = useStore();
 const router = useRouter();
 
+var config = computed(()=>store.state.params||{room:{},user:{}});
+
 const onBack = () => {
-    router.push({name:"index"});
+    try{
+        const {room:{rid},user:{uid}} = config.value;
+        if(rid&&uid){
+            ElMessageBox.confirm('确定退出房间?',"", {
+                confirmButtonText: "确定",
+                cancelButtonText: "取消",
+            }).then(()=>{
+                // router.push({path:"/"});
+                socket.emit("query",{
+                    event:"exit",
+                    params:{
+                        uid,
+                        rid
+                    }
+                });
+            }).catch(()=>{});
+        }else{
+            router.push({path:"/"});
+        }
+    }catch(err){
+        router.push({path:"/"});
+    }
 }
-
-const width = ref(1000);
-const height = ref(1000);
-
-const consoleClose =ref((val)=>{
-    console.log(val);
-});
 
 const value = ref();
 const options = ref([{
@@ -200,14 +217,10 @@ const makeShape = item=>{
     const {label} = item;
     const [left,top] = [window.innerWidth/2,window.innerHeight/3];
     let graph = null;
+    const style = { top, left, width: 50, height: 50, fill: 'gray',stroke:"gray" ,radius:50};
     switch(label){
         case "直线":
-            graph = new fabric.Line([10, 10, 100, 100], {
-                left,
-                top,
-                fill: 'gray',
-                stroke: 'gray'
-            });
+            graph = new fabric.Line([10, 10, 100, 100],style);
             break;
         case "曲线":
             graph = new fabric.Polyline([ 
@@ -227,14 +240,10 @@ const makeShape = item=>{
             }, { 
                 x:150, 
                 y:50 
-            }], { 
-                left,
-                top,
-                fill: 'gray'
-            });
+            }],style);
             break;
         case "三角形":
-            graph = new fabric.Triangle({ top, left, width: 50, height: 50, fill: 'gray' });
+            graph = new fabric.Triangle(style);
             break;
         case "椭圆形":
             graph = new fabric.Circle({
@@ -245,11 +254,35 @@ const makeShape = item=>{
             })
             break;
         case "矩形":
-            graph = new fabric.Rect({ top, left, width: 50, height: 50, fill: 'gray' });
+            graph = new fabric.Rect(style);
             break;
     }
-    console.log(graph);
-    if(graph)canvas.add(graph);
+    if(graph){
+        graph.on('selected', function() {
+            console.log('被选中了');
+        });
+        // after:render：画布重绘后
+        // object:selected：对象被选中
+        // object:moving：对象移动
+        // object:rotating：对象被旋转
+        // object:added：对象被加入
+        // object:removed：对象被移除
+        try{
+            const {room:{rid},user:{uid}} = config.value;
+            socket.emit("stream",{
+                event:"increment",
+                rid,uid,
+                frame:{
+                    gid:Date.now().toString(36),
+                    type:label,
+                    style
+                }
+            });
+        }catch(err){
+
+        }
+        canvas.add(graph);
+    }
 }
 
 socket.on("stream",res=>{
@@ -260,13 +293,17 @@ var canvas;
 
 function init() {
     canvas = new fabric.Canvas('canvas') // 实例化fabric，并绑定到canvas元素上
-    // 圆
-    // let circle = new fabric.Circle({
-    //   left: 200,
-    //   top: 200,
-    //   radius: 50,
-    // })
-   
+    canvas.on('mouse:down', function(options) {
+        // console.log("鼠标按下了：", options.e.clientX, options.e.clientY);
+    });
+    // 鼠标抬起时
+    canvas.on('mouse:up', function(options) {
+        // console.log("鼠标抬起了：", options.e.clientX, options.e.clientY);
+    });
+    // 鼠标移动时
+    canvas.on('mouse:move', function(options) {
+        // console.log("鼠标移动了：", options.e.clientX, options.e.clientY);
+    });
     // 线性渐变
     // let gradient = new fabric.Gradient({
     //   type: 'linear', // linear or radial
@@ -283,27 +320,6 @@ function init() {
     // })
     // circle.set('fill', gradient);
     // canvas.add(circle);
-    // canvas.add(new fabric.Circle({
-    //   left: 100,
-    //   top: 100,
-    //   radius: 50,
-    //   fill: 'gray'
-    // }))
-    // canvas.add(new fabric.Circle({
-    //   left: 200,
-    //   top: 100,
-    //   radius: 50,
-    //   fill: 'blue'
-    // }))
-    // canvas.add(new fabric.Circle({
-    //   left: 100,
-    //   top: 200,
-    //   radius: 30,
-    //   fill: 'red'
-    // }))
-    // canvas.add(new fabric.Triangle({
-    //     width: 20, height: 30, fill: 'blue', left: 50, top: 50
-    // }))
     canvas.setWidth(window.innerWidth);
     canvas.setHeight(window.innerHeight);
     window.onresize = (canvas=>{
@@ -313,7 +329,7 @@ function init() {
         }
     })(canvas);
 }
-   
+
 onMounted(() => {
     init();
 })
