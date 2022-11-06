@@ -153,12 +153,12 @@ export default{
     cursor: default;
     border-radius: .5rem;
 }
-.el-icon:hover{
+.el-icon:hover,.el-icon:active{
     color: #E8E8E8;
     background-color: grey;
     transform: scale(1.2,1.2);
 }
-.close:hover{
+.close:hover,.close:active{
     background-color: #f2473e;
 }
 

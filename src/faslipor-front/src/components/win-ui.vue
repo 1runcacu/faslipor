@@ -33,8 +33,6 @@ const recordBox = {
     fill: false
 };
 
-let dragWin = null;
-
 export default{
     name:'win-ui',
     components:{
@@ -91,11 +89,9 @@ export default{
             default:true
         }
     },
-    mounted(){
-        dragWin = this.$refs['dragWin'];
-    },
     methods:{
         fullScreen(){
+            const dragWin = this.$refs['dragWin'];
             const tmp = dragWin;
             const style = dragWin.style;
             // 宽的样式 如果被手动缩小或者放大，则表示非全屏状态，则将状态置为false
@@ -183,12 +179,12 @@ export default{
     cursor: default;
     border-radius: .5rem;
 }
-.el-icon:hover{
+.el-icon:hover,.el-icon:active{
     color: #E8E8E8;
     background-color: grey;
     transform: scale(1.2,1.2);
 }
-.close:hover{
+.close:hover,.close:active{
     background-color: #f2473e;
 }
 

@@ -51,6 +51,13 @@ html,body{
   box-sizing: border-box;
   background-color: #F5F7F9;
 }
+html{
+  touch-action: none;
+}
+body{
+  touch-action: auto;
+}
+
 body {
   height: 100vh;
   background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
@@ -76,5 +83,15 @@ body {
 .drag-win-enter-active,
 .drag-win-leave-active {
   transition: all 0.5s ease;
+}
+
+.block::-webkit-scrollbar {
+  width: 0.5em;
+  background-color: #d9d9d9;
+}
+
+.block::-webkit-scrollbar-thumb {
+  border-radius: 0.25em;
+  background-color: #b9b9b9;
 }
 </style>

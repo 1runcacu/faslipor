@@ -153,7 +153,7 @@ const handleChange = (val) => {
   -webkit-user-drag: none;
   filter: invert(80%);
 }
-.drag-box:hover{
+.drag-box:hover,.drag-box:active{
   transform: scale(1.2,1.2);
   filter: invert(100%);
   background-color: rgba(38, 35, 35, 1);
@@ -188,6 +188,7 @@ const handleChange = (val) => {
 }
 .right{
     flex: 1;
+    padding: 5px;
 }
 
 .el-menu,.el-sub-menu,.el-menu-item-group,.el-menu-item,.el-collapse,.is-opend,

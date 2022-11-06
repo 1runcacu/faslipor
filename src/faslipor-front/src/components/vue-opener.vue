@@ -26,9 +26,7 @@ export default{
     },methods:{
         change(){
             this.select = !this.select;
-            if(this.select==false){
-                this.$emit("open",true);
-            }
+            this.$emit("open",!this.select);
         }
     },
     components:{
@@ -95,14 +93,14 @@ export default{
     box-shadow: rgba(15, 20, 28, 0.286) 0px 0px 5px;
     
 }
-.drag-opener:hover{
+.drag-opener:hover,.drag-opener:active{
     transform: scale(1.05,1.05);
     background-color: rgba(15, 20, 28, 0.868);
 }
 .close{
     margin-right: 5px;
 }
-.close:hover{
+.close:hover,.close:active{
     transform: scale(1.05,1.05);
     color: red;
 }
