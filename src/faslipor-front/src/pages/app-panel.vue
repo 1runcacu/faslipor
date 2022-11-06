@@ -3,7 +3,7 @@
         <div class="header">
             <el-page-header @back="onBack">
                 <template #content>
-                    <span class="text-large font-600 mr-3 ban-select-font" style="color:#f7f7f7"> 房间名称 </span>
+                    <span class="text-large font-600 mr-3 ban-select-font" style="color:#f7f7f7"> {{$store.state.params.room?$store.state.params.room.name||"":""}} </span>
                     <el-button :type="toolShow?'success':'info'" class="console" link @click="toolsHandle">工具栏</el-button>
                     <el-button :type="consoleShow?'success':'info'" class="console" link @click="consoleShow=!consoleShow">控制台</el-button>
                 </template>
@@ -79,12 +79,14 @@
 import { ElPageHeader,ElCollapse,ElCollapseItem,ElMessageBox} from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { inject, ref,computed } from 'vue';
+import { inject, ref,computed,onBeforeUnmount } from 'vue';
 import { onMounted } from 'vue'
 import { fabric } from 'fabric'
 import vueConsoleVue from '@/components/vue-console.vue';
 import vueOpener from '@/components/vue-opener.vue'
 import { useStore } from 'vuex';
+
+const graphMap = {};
 
 const socket = inject("socket");
 const store = useStore();
@@ -216,48 +218,74 @@ const consoleHandle = (val)=>{
 const makeShape = item=>{
     const {label} = item;
     const [left,top] = [window.innerWidth/2,window.innerHeight/3];
-    let graph = null;
     const style = { top, left, width: 50, height: 50, fill: 'gray',stroke:"gray" ,radius:50};
+    let create = null;
     switch(label){
         case "直线":
-            graph = new fabric.Line([10, 10, 100, 100],style);
+            create = {
+                type:"Line",
+                params:[[10, 10, 100, 100],style]
+            };
             break;
         case "曲线":
-            graph = new fabric.Polyline([ 
-            { 
-                x:200, 
-                y:10 
-            }, 
-            { 
-                x:250, 
-                y:50 
-            }, { 
-                x:250, 
-                y:180 
-            }, { 
-                x:150, 
-                y:180 
-            }, { 
-                x:150, 
-                y:50 
-            }],style);
+            create = {
+                type:"Polyline",
+                params:[[ 
+                { 
+                    x:200, 
+                    y:10 
+                }, 
+                { 
+                    x:250, 
+                    y:50 
+                }, { 
+                    x:250, 
+                    y:180 
+                }, { 
+                    x:150, 
+                    y:180 
+                }, { 
+                    x:150, 
+                    y:50 
+                }],style]
+            };
             break;
         case "三角形":
-            graph = new fabric.Triangle(style);
+            create = {
+                type:"Triangle",
+                params:[
+                    style
+                ]
+            };
             break;
         case "椭圆形":
-            graph = new fabric.Circle({
-                left,
-                top,
-                radius: 50,
-                fill: 'gray'
-            })
+            create = {
+                type:"Circle",
+                params:[
+                    style
+                ]
+            };
             break;
         case "矩形":
-            graph = new fabric.Rect(style);
+            create = {
+                type:"Rect",
+                params:[
+                    style
+                ]
+            };
             break;
     }
+    if(!create){
+        return;
+    }
+    const graph = new fabric[create.type](...create.params);
     if(graph){
+        const gid = Date.now().toString(36);
+        const frame = {
+            gid,
+            create
+        }
+        graphMap[gid] = graph;
         graph.on('selected', function() {
             console.log('被选中了');
         });
@@ -272,11 +300,7 @@ const makeShape = item=>{
             socket.emit("stream",{
                 event:"increment",
                 rid,uid,
-                frame:{
-                    gid:Date.now().toString(36),
-                    type:label,
-                    style
-                }
+                frame
             });
         }catch(err){
 
@@ -285,9 +309,24 @@ const makeShape = item=>{
     }
 }
 
-socket.on("stream",res=>{
-    console.log(res)
-});
+
+const stream = data=>{
+    const {event,frame} = data;
+    switch(event){
+        case "increment":
+            const {create,gid} = frame;
+            if(!graphMap[gid]){
+                const graph = new fabric[create.type](...create.params);
+                graphMap[gid] = graph;
+                graph.on('selected', function() {
+                    console.log('被选中了');
+                });
+                canvas.add(graph);
+            }
+            break;
+    }
+    console.log(data)
+}
 
 var canvas; 
 
@@ -332,7 +371,13 @@ function init() {
 
 onMounted(() => {
     init();
-})
+    socket.on("stream",stream);
+});
+
+onBeforeUnmount(()=>{
+    console.log(23333);
+    socket.off("stream",stream);
+});
 
 </script>
 

@@ -4,6 +4,9 @@ const socketIO = require('socket.io');
 const app = express();
 const server = http.createServer(app);
  
+//redis
+//https://docs.redis.com/latest/rs/references/client_references/client_nodejs/
+
 const io = socketIO(server,{
     cors: {
         origin: '*'
@@ -103,10 +106,30 @@ function exitRoom(socket,params){
   goto(socket,"/",{});
 }
 
-function broadCast(list){
+function exitUser(socket){
+  let rid,uid;
+  for(let key in roomsUsers){
+    let has = roomsUsers[key].find(v=>v.socket===socket);
+    if(has){
+      rid = key;
+      uid = has.uid;
+      break;
+    }
+    exitRoom(socket,{uid,rid});
+  }
+}
+
+function broadCastList(list){
   for(let key in sockets){
     reqlist(sockets[key],list);
   }
+}
+
+function broadCastRoomUsers(rid,data){
+  console.log(roomsUsers[rid]);
+  roomsUsers[rid].forEach(user=>{
+    user.socket.emit("stream",data)
+  })
 }
 
 io.on('connection',(socket) => {
@@ -114,37 +137,53 @@ io.on('connection',(socket) => {
     console.log(`${id}上线`);
     sockets[id] = socket;
     socket.on('query',data=>{
-      const {event,params} = data;
-      switch(event){
-        case "list":reqlist(socket,Object.values(rooms));break;
-        case "add":createRoom(socket,params);broadCast(Object.values(rooms));break;
-        case "select":enterRoom(socket,params);broadCast(Object.values(rooms));break;
-        case "exit":exitRoom(socket,params);broadCast(Object.values(rooms));break;
-      }
+      try{
+        const {event,params} = data;
+        switch(event){
+          case "list":reqlist(socket,Object.values(rooms));break;
+          case "add":createRoom(socket,params);broadCastList(Object.values(rooms));break;
+          case "select":enterRoom(socket,params);broadCastList(Object.values(rooms));break;
+          case "exit":exitRoom(socket,params);broadCastList(Object.values(rooms));break;
+        }
+      }catch(err){}
     });
     socket.on('stream',data=>{
-      console.log(data);
+      try{
+        const {event,rid,uid,frame} = data;
+        switch(event){
+          case "increment":broadCastRoomUsers(rid,data);break;
+        }
+      }catch(err){}
     });
     socket.on('message',(data) => {
         console.log(`收到客户端的消息：${data}`);
-        socket.emit('message', {
-          msg: `你好${data}`,
-          code: 200
-        });  
+        try{
+          socket.emit('message', {
+            msg: `你好${data}`,
+            code: 200
+          });  
+        }catch(err){}
     });
     socket.on("reconnect",()=>{
       console.log(`${id}重新连接`);
-      sockets[id] = socket;
-      reqlist(socket,Object.values(rooms));
+      try{
+        sockets[id] = socket;
+        setTimeout(() => {
+          reqlist(socket,Object.values(rooms));
+        }, 500);
+      }catch(err){}
     });
     socket.on('disconnect', () => {
       console.log(`${id}下线`);
-     delete sockets[id];
+      try{
+        delete sockets[id];
+        exitUser(socket);
+        broadCastList(Object.values(rooms));
+      }catch(err){}
     })
 });
 
-
-server.listen(8102,() => {
+server.listen(8099,() => {
     console.log("server is up and running on port 8102");
 });
 
