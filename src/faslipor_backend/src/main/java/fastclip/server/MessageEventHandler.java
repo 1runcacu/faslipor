@@ -8,8 +8,10 @@ import com.corundumstudio.socketio.annotation.OnConnect;
 import com.corundumstudio.socketio.annotation.OnDisconnect;
 import com.corundumstudio.socketio.annotation.OnEvent;
 import fastclip.Service.QueryService;
+import fastclip.domain.Frame;
 import fastclip.domain.House;
 import fastclip.domain.Query;
+import fastclip.domain.Stream;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,20 +21,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 /*
-功能	请求方法	链接	参数	返回参数
-获取所有房间信息	websocket	/login/list	无	json数组（房间信息）
-搜索（前端）
-创建房间	websocket
-加入房间	websocket	/login/	String	json数组（最近的全量帧及之后的增量帧及房间信息，个人信息）
-前端监听事件	数据格式	参数定义
-asset
-message	{msg,type}	type:success\
-stream
-reset
-后端监听事件	数据格式	参数定义
-query	{event,params}	3种event String类型(list,select,add)对应params分别是(null),(String rid),(String roomName,String brief)
-stream	{uid,rid,frame}	(String uid,String rid,String frame)
-reset	{uid,rid,frame}	(String uid,String rid,String frame)
+stream           | {uid,rid,frame} | increment 事件
+(String event,String uid,String rid,frame:{String gid,String type, style:{int left,int top,int radius}})
+
 * */
 
 @Component
@@ -48,25 +39,59 @@ public class MessageEventHandler {
     @Autowired
     private QueryService queryService;
 
-    public static ConcurrentMap<String, SocketIOClient> socketIOClientMap = new ConcurrentHashMap<>();
+    public static Set<SocketIOClient> socketIOClientMap = new HashSet<>();
+
+
+    public static volatile boolean flag=true;
 
 
     @OnEvent(value = "query")
     public void onQuery(SocketIOClient client, AckRequest request, Query data) {
           log.info("query");
-        if(data.event.equals("add"))
+          if(data.event.equals("add"))
         { log.info("add");
-            client.sendEvent("redirect", queryService.addRoom(data.params.roomName,data.params.description));}
-        if(data.event.equals("list")){
-            log.info("list");
-            client.sendEvent("asset",queryService.list());
+            client.sendEvent("redirect", queryService.addRoom(data.params.roomName,data.params.description));
         }
+
         if(data.event.equals("select")){
             log.info("select");
             client.sendEvent("redirect",queryService.select(data.params.rid));
         }
+        if(data.event.equals("exit")){
+            log.info("exit");
+            client.sendEvent("redirect",queryService.exit(data.params.rid,data.params.uid));
+        }
+          if(data.event.equals("list")){
+            log.info("list");
+            client.sendEvent("asset",queryService.list());
+          }else{
+              int i=0;
+              for(SocketIOClient cur:socketIOClientMap){
+                  cur.sendEvent("asset",queryService.list());
+                  log.info(i++ +" "+queryService.list().toString());
+              }
+          }
+
         //广播消息
         //sendBroadcast();
+    }
+
+    @OnEvent(value="stream")
+    public void onStream(SocketIOClient client, AckRequest request, Stream data) throws InterruptedException {
+       log.info("stream");
+       if(data.event.equals("increment")){
+           log.info("increment");
+          while(!flag){
+              Thread.sleep(10);
+          }
+          flag=false;
+          List<String> nameList=redisService.get(data.rid,List.class);
+          for(String cur:nameList){
+              if(!cur.equals(data.uid)){}
+             // socketIOClientMap.get(cur).sendEvent("stream","123");
+          }
+          flag=true;
+       }
     }
 
     /**
@@ -80,9 +105,10 @@ public class MessageEventHandler {
         if(client==null){
             log.info("client null");
         }
-       String mac = client.getHandshakeData().getSingleUrlParam("roomId");
 
-        socketIOClientMap.put(mac, client);
+
+         socketIOClientMap.add(client);
+        log.info(String.valueOf(socketIOClientMap.size()));
         String message="d";
         List<House> r = redisService.get("list", List.class);
         if (r == null) {
@@ -92,7 +118,7 @@ public class MessageEventHandler {
         message = String.valueOf(JSON.parseArray(String.valueOf(r)));
         //client.sendEvent("message", r);
         //sendBroadcast();
-        log.info("客户端:" + client.getSessionId() + "已连接,mac=" + mac);
+        log.info("客户端:" + client.getSessionId() + "已连接,mac=" + "mac");
     }
 
     /**
@@ -110,9 +136,9 @@ public class MessageEventHandler {
      * 广播消息
      */
     public void sendBroadcast() {
-        for (SocketIOClient client : socketIOClientMap.values()) {
+        for (SocketIOClient client : socketIOClientMap) {
             if (client.isChannelOpen()) {
-                client.sendEvent("Broadcast", "当前时间", System.currentTimeMillis());
+                client.sendEvent("redirect", "当前时间", System.currentTimeMillis());
             }
         }
 

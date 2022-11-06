@@ -68,6 +68,40 @@ public class QueryService {
         return myResult;
     }
 
+    public Redirect exit(String rid,String uid){
+        Redirect redirect=new Redirect();
+        House myRoom=redisService.get(rid, House.class);
+        List<JSONObject> r = redisService.get("list", List.class);
+        List<JSONObject> arrList = new ArrayList(r);
+        log.info(r.toString());
+        Iterator<JSONObject> iterator = arrList.iterator();
+        House u=null;
+        while (iterator.hasNext()) {
+             u = JSON.parseObject(String.valueOf(iterator.next()),House.class);
+            log.info(JSON.toJSONString(u));
+            if (myRoom.rid.equals(u.rid)) {
+                log.info(myRoom.rid+"  "+u.rid);
+                iterator.remove();//使用迭代器的删除
+                break;
+            }
+        }
+        log.info("删后的"+arrList.toString());
+        if(u.stats>1){
+            myRoom.stats--;
+            arrList.add(JSON.parseObject(JSON.toJSONString(myRoom)));
+        }
+        log.info("判断人数后的"+arrList.toString());
+        redisService.set("list",arrList);
+        redisService.set(myRoom.rid,myRoom);
+        Result myResult=new Result();
+        myResult.data=redisService.get("list", List.class);
+        log.info("redis里的"+myResult.data.toString());
+        redirect.path="/";
+        redirect.params.result=myResult;
+        return redirect;
+    }
+
+
     public Redirect select(String rid){
         Redirect redirect=new Redirect();
         House myRoom=redisService.get(rid, House.class);
