@@ -224,19 +224,19 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-.el-input:hover{
+.el-input:hover,.el-input:active{
   box-shadow: rgb(204, 204, 204) 0px 0px 10px;
   transform: scale(1.01,1.01);
 }
 
-.el-card:hover{
+.el-card:hover,.el-card:active{
   box-shadow: gray 0px 0px 10px;
   transform: scale(1.05,1.05);
   background-color: #132d59;
   transition-duration: 500ms;
   color: white;
 }
-.disabled:hover{
+.disabled:hover,.disabled:active{
   background-color: #910314 !important;
 }
 

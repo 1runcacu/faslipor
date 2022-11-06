@@ -1,5 +1,17 @@
 import { throttle } from "@/api/util"; //节流函数不再展示，不要直接去除即可，在下面样式引用去除即可
 
+const map = {};
+const Layout = [];
+
+function sortLayout(id){
+  let index = Layout.indexOf(id);
+  Layout.splice(index,1);
+  Layout.push(id);
+  Layout.forEach((key,index)=>{
+    map[key].el.style.zIndex = index;
+  });
+}
+
 const directives = {
   drag: {
     mounted(el, binding) {
@@ -7,8 +19,14 @@ const directives = {
       if (!binding.value && (binding.value ?? "") !== "") return;
       // 拖拽实现
       const odiv = el.parentNode;
-      el.onmousedown = (eve) => {
-        odiv.style.zIndex = 1; //当前拖拽的在最前面显示
+      const id = Math.random().toString(36).substr(3,8);
+      map[id] = {
+        el:odiv
+      }
+      Layout.push(id);
+      odiv.style.zIndex = Layout.length;
+      const onmousedown = (eve) => {
+        sortLayout(id);
         eve = eve || window.event;
         const mx = eve.pageX; //鼠标点击时的坐标
         const my = eve.pageY; //鼠标点击时的坐标
@@ -20,7 +38,7 @@ const directives = {
         const clientHeight = document.documentElement.clientHeight; //页面的高
         const oHeight = odiv.clientHeight; //窗口的高度
         const maxY = clientHeight - oHeight; //y轴能移动的最大距离
-        document.onmousemove = (e) => {
+        const onmousemove = (e) => {
           const x = e.pageX;
           const y = e.pageY;
           let left = x - mx + dleft; //移动后的新位置
@@ -36,10 +54,23 @@ const directives = {
           odiv.style.marginLeft = 0;
           odiv.style.marginTop = 0;
         };
+        document.addEventListener("mousemove",onmousemove,false);
+        document.addEventListener("touchmove",onmousemove,false);
+        // document.onmousemove = onmousemove;
+        // document.ontouchmove = onmousemove;
         document.onmouseup = () => {
-          document.onmousemove = null;
+          document.removeEventListener("mousemove",onmousemove);
+          document.removeEventListener("touchmove",onmousemove);
+          // document.onmousemove = null;
+          // document.ontouchmove = null;
         };
       };
+      // document.addEventListener("mousedown",onmousedown);
+      // document.addEventListener("touchstart",onmousedown);
+      el.addEventListener("mousedown",onmousedown,false);
+      el.addEventListener("touchstart",onmousedown,false);
+      // el.onmousedown = onmousedown;
+      // el.ontouchstart = onmousedown;
     }
   },
   resize: {
@@ -77,17 +108,6 @@ const directives = {
       // 计算移动距离
       const computedDistance = (pre, cur) => {
         return [cur.x - pre.x, cur.y - pre.y];
-      };
-      //数据重置
-      const resetData = () => {
-        pos.width = 0;
-        pos.height = 0;
-        pos.top = 0;
-        pos.left = 0;
-        pos.x = 0;
-        pos.y = 0;
-        pos.dir = "";
-        document.onmousemove = null;
       };
       // 变更尺寸方法
       const changeSize = (e) => {
@@ -155,7 +175,7 @@ const directives = {
         doFn[pos.dir]();
       };
       //鼠标按下 触发变更事件
-      el.onmousedown = (e) => {
+      const onmousedown = (e) => {
         if (e.target.name !== "resize") return;
         let d = getDirection(e);
         //当位置为四个边和四个角才开启尺寸修改
@@ -167,11 +187,17 @@ const directives = {
           pos.x = e.pageX;
           pos.y = e.pageY;
           pos.dir = d;
-          document.onmousemove = changeSize;
+          document.addEventListener("mousemove",changeSize,false);
+          document.addEventListener("touchmove",changeSize,false);
+          // document.onmousemove = changeSize;
+          // document.ontouchmove = changeSize;
         }
         document.onmouseup = resetData;
       };
-
+      el.addEventListener("mousedown",onmousedown,false);
+      el.addEventListener("touchstart",onmousedown,false);
+      // el.onmousedown = onmousedown;
+      // el.ontouchstart = onmousedown;
       /** 鼠标样式变更 */
       const changeShowCursor = throttle((e) => {
         e.preventDefault();
@@ -182,9 +208,26 @@ const directives = {
         // 确定是某个方位的动向
         el.style.cursor = mouseDir[d] || "default";
       }, 0); //节流0.2s
-      el.onmousemove = changeShowCursor; //监听根元素上移动的鼠标事件
+      el.addEventListener("mousemove",changeShowCursor,false);
+      el.addEventListener("touchmove",changeShowCursor,false);
+      // el.onmousemove = changeShowCursor; //监听根元素上移动的鼠标事件
+      // el.ontouchmove = changeShowCursor;
+      //数据重置
+      var resetData = () => {
+        pos.width = 0;
+        pos.height = 0;
+        pos.top = 0;
+        pos.left = 0;
+        pos.x = 0;
+        pos.y = 0;
+        pos.dir = "";
+        document.removeEventListener("mousemove",changeSize);
+        document.removeEventListener("touchmove",changeSize);
+        // document.onmousemove = null;
+        // document.ontouchmove = null;
+      };
     }
-  }
+  },
 };
 
 export default (app) => {
