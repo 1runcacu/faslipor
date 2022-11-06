@@ -7,9 +7,9 @@ public class Param {
     public String rid;
     public String roomName;
     public String description;
-    public Room room;
+    public House room;
     public User user;
-    public List<Room> list;
+    public List<House> list;
     public Param(){
         this.state=200;
     }

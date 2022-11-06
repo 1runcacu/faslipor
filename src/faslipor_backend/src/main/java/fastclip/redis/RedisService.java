@@ -1,13 +1,19 @@
 package fastclip.redis;
 
+import com.alibaba.fastjson.TypeReference;
+import fastclip.domain.House;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import com.alibaba.fastjson.JSON;
 
+import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @Service
 public class RedisService {
 
@@ -22,6 +28,7 @@ public class RedisService {
             jedis =  jedisPool.getResource();
             //生成真正的key
             String  str = jedis.get(key);
+
             T t =  stringToBean(str, clazz);
             return t;
         }finally {
@@ -45,7 +52,10 @@ public class RedisService {
         }else if(clazz == long.class || clazz == Long.class) {
             return  (T)Long.valueOf(str);
         }else if(clazz== List.class){
-            return JSON.toJavaObject(JSON.parseArray(str),clazz);
+
+
+            return (T) Arrays.asList(JSON.parseObject(str,new TypeReference<Object[]>(){}));
+
         }
         else {
             return JSON.toJavaObject(JSON.parseObject(str), clazz);

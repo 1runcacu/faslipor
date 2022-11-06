@@ -13,18 +13,15 @@ package fastclip.controller;
 加入房间           websocket            /login/{id}    String    json数组（最近的全量帧及之后的增量帧及房间信息，个人信息）*/
 
 import com.alibaba.fastjson.JSON;
-import fastclip.domain.Room;
-import fastclip.domain.User;
+import fastclip.domain.House;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 
@@ -39,7 +36,7 @@ public class LoginController {
 
     @GetMapping("/list")
     public String list() {
-        List<Room> r = redisService.get("list", List.class);
+        List<House> r = redisService.get("list", List.class);
         if (r == null) {
             redisService.set("list", new ArrayList());
             return "null";

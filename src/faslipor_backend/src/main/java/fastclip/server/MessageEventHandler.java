@@ -8,8 +8,8 @@ import com.corundumstudio.socketio.annotation.OnConnect;
 import com.corundumstudio.socketio.annotation.OnDisconnect;
 import com.corundumstudio.socketio.annotation.OnEvent;
 import fastclip.Service.QueryService;
+import fastclip.domain.House;
 import fastclip.domain.Query;
-import fastclip.domain.Room;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +84,7 @@ public class MessageEventHandler {
 
         socketIOClientMap.put(mac, client);
         String message="d";
-        List<Room> r = redisService.get("list", List.class);
+        List<House> r = redisService.get("list", List.class);
         if (r == null) {
             redisService.set("list", new ArrayList());
 

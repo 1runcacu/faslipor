@@ -5,7 +5,7 @@ import java.util.List;
 public class Result {
     public String event;
     public int state;
-    public Room room;
+    public House room;
     public User user;
-    public List<Room> data;
+    public List<House> data;
 }
