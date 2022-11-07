@@ -2,6 +2,7 @@ fastclip/server/myMessageHandler.class
 fastclip/domain/Stream.class
 fastclip/controller/LoginController.class
 fastclip/server/ServerInitiazer.class
+fastclip/domain/NameList.class
 fastclip/domain/House.class
 fastclip/controller/DemoController.class
 fastclip/redis/RedisService$1.class
@@ -12,6 +13,7 @@ fastclip/config/WebMvcConfig.class
 fastclip/redis/RedisPoolFactory.class
 fastclip/NettySocketioApplication.class
 fastclip/domain/Redirect.class
+fastclip/domain/Istream.class
 fastclip/redis/RedisConfig.class
 META-INF/spring-configuration-metadata.json
 fastclip/Service/QueryService.class

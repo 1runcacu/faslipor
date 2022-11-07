@@ -43,6 +43,8 @@ public class MessageEventHandler {
 
     public static Map<String,SocketIOClient> socketIOClientMap = new ConcurrentHashMap<>();
 
+    public static Map<SocketIOClient,String> socketIOClientMap1=new ConcurrentHashMap<>();
+
     public static java.util.Queue<Istream> myQueue=new LinkedList<>();
 
     public static java.util.Queue<Stream> myQueueAll=new LinkedList<>();
@@ -114,6 +116,7 @@ public class MessageEventHandler {
        if(data0.get("event").equals("increment")){
            log.info("increment");
            Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
+           //查看时间戳比队尾的大才加，否则扔掉
            myQueue.add(data);
            log.info(String.valueOf(myQueue.size()));
           while(!flag){
@@ -152,16 +155,10 @@ public class MessageEventHandler {
         if(client==null){
             log.info("client null");
         }
-
-
          socketIOClientSet.add(client);
         log.info(String.valueOf(socketIOClientSet.size()));
         String message="d";
         List<House> r = redisService.get("list", List.class);
-        if (r == null) {
-            redisService.set("list", new ArrayList());
-
-        }
         message = String.valueOf(JSON.parseArray(String.valueOf(r)));
         //client.sendEvent("message", r);
         //sendBroadcast();
@@ -175,7 +172,21 @@ public class MessageEventHandler {
      */
     @OnDisconnect
     public void onDisconnect(SocketIOClient client) {
+        log.info("检测到断连");
         socketIOClientSet.remove(client);
+        log.info("移除client "+client.toString());
+        String uid=socketIOClientMap1.get(client);
+        log.info("拿到uid"+ uid);
+        if(uid!=null){
+            String rid=redisService.get(uid+"Room",House.class).rid;
+            log.info("拿到rid"+ rid);
+            log.info("要退出房间了");
+            queryService.exit(client,rid,uid);
+        }int i=0;
+        for(SocketIOClient cur:socketIOClientSet){
+            cur.sendEvent("asset",queryService.list());
+            log.info(i++ +" "+queryService.list().toString());
+        }
         log.info("客户端:" + client.getSessionId() + "断开连接");
     }
 
