@@ -19,6 +19,7 @@ const users = {};
 
 const rooms = {};
 const roomsUsers = {};
+const roomBuffer = {};
 
 const sockets = {};
 
@@ -68,6 +69,7 @@ function createRoom(socket,params){
     user
   };
   rooms[rid] = room;
+  roomBuffer[rid] = {};
   users[uid] = user;
   goto(socket,`/panel`,data);
 }
@@ -102,6 +104,7 @@ function exitRoom(socket,params){
   if(roomsUsers[rid].length===0){
     delete rooms[rid];
     delete roomsUsers[rid];
+    delete roomBuffer[rid];
   }
   goto(socket,"/",{});
 }
@@ -132,6 +135,19 @@ function broadCastRoomUsers(rid,data){
   })
 }
 
+function record(rid,uid,frame){
+  if(!roomBuffer[rid])roomBuffer[rid]={};
+  const buf = roomBuffer[rid];
+  const {pixel:{gid,date}} = frame;
+  if(buf[gid]){
+    if(buf[gid].date<date){
+      buf[gid] = frame.pixel;
+    }
+  }else{
+    buf[gid] = frame.pixel;
+  }
+}
+
 io.on('connection',(socket) => {
     const id = ID();
     console.log(`${id}上线`);
@@ -154,19 +170,17 @@ io.on('connection',(socket) => {
         const {event,rid,uid,lid,frame} = data;
         switch(event){
           case "increment"://broadCastRoomUsers(rid,data);break;
-          case "all":
-          case "edit":broadCastRoomUsers(rid,data);break;
+          case "all":broadCastRoomUsers(rid,data);break;
+          case "edit":record(rid,uid,frame);broadCastRoomUsers(rid,data);break;
+          case "refresh":broadCastRoomUsers(rid,{
+            event,rid,uid,frame:roomBuffer[rid]
+          });break;
         }
       }catch(err){}
     });
     socket.on('message',(data) => {
-        console.log(`收到客户端的消息：${data}`);
-        try{
-          socket.emit('message', {
-            msg: `你好${data}`,
-            code: 200
-          });  
-        }catch(err){}
+        console.log(data);
+        message(socket,data);
     });
     socket.on("reconnect",()=>{
       console.log(`${id}重新连接`);

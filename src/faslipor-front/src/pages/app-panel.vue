@@ -331,7 +331,7 @@ function addPixel(...args){
 const stream = data=>{
     try{
         const {rid,uid,event,frame} = data;
-        if(uid === config.value.user.uid){
+        if(event!=="refresh"&&uid === config.value.user.uid){
             return;
         }
         switch(event){
@@ -360,9 +360,12 @@ const stream = data=>{
                     }
                     return v.gid===pixel.gid
                 })){
-                        // canvas.remove(v);
-                        addPixel(pixel);
+                    addPixel(pixel);
                 }
+                break;
+            case "refresh":
+                addPixel(...Object.values(frame));
+                break;
         }
     }catch(err){console.log(err)};
 }

@@ -219,7 +219,7 @@ onMounted(() => {
   background-color: rgba(255, 255, 255, 0.1);
   box-shadow: rgb(204, 204, 204) 0px 0px 8px;
   -webkit-column-break-inside: avoid;
-  page-break-inside:avoid;
+  /* page-break-inside:avoid; */
   column-gap: 20px;
 }
 

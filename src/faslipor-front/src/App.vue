@@ -66,6 +66,17 @@ onMounted(()=>{
   height;
 })
 
+history.pushState(null, null, document.URL);
+window.addEventListener('popstate', function () {
+    history.pushState(null, null, document.URL);
+});
+
+window.onpopstate = function () {
+        /// 当点击浏览器的 后退和前进按钮 时才会被触发， 
+    window.history.pushState('forward', null, '');
+    window.history.forward(1);
+};
+
 </script>
 
 <style>
