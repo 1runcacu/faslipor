@@ -157,6 +157,7 @@ public class QueryService {
         newUser.uid = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
         newUser.state = "游客";
         socketIOClientMap.put(newUser.uid,client);
+        log.info(newUser.uid+" "+client);
         NameList newNameList=new NameList();
         newNameList.uid=newUser.uid;
         newNameList.state=newUser.state;

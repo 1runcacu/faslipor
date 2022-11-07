@@ -1,6 +1,7 @@
 package fastclip.server;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
@@ -8,12 +9,10 @@ import com.corundumstudio.socketio.annotation.OnConnect;
 import com.corundumstudio.socketio.annotation.OnDisconnect;
 import com.corundumstudio.socketio.annotation.OnEvent;
 import fastclip.Service.QueryService;
-import fastclip.domain.Frame;
-import fastclip.domain.House;
-import fastclip.domain.Query;
-import fastclip.domain.Stream;
+import fastclip.domain.*;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import sun.misc.Queue;
@@ -44,9 +43,13 @@ public class MessageEventHandler {
 
     public static Map<String,SocketIOClient> socketIOClientMap = new ConcurrentHashMap<>();
 
-    public static java.util.Queue<Stream> myQueue=new LinkedList<>();
+    public static java.util.Queue<Istream> myQueue=new LinkedList<>();
+
+    public static java.util.Queue<Stream> myQueueAll=new LinkedList<>();
 
     public static volatile boolean flag=true;
+
+    public static volatile boolean flaga=true;
 
 
     @OnEvent(value = "query")
@@ -81,27 +84,57 @@ public class MessageEventHandler {
     }
 
     @OnEvent(value="stream")
-    public void onStream(SocketIOClient client, AckRequest request, Stream data) throws InterruptedException {
+    public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException {
        log.info("stream");
-       log.info(JSON.toJSONString(data));
-       if(data.event.equals("increment")){
+       log.info(JSON.toJSONString(data0));
+       if(data0.get("event").equals("all")) {
+          log.info("all");
+          Stream data=JSON.parseObject(JSON.toJSONString(data0),Stream.class);
+          myQueueAll.add(data);
+          log.info(String.valueOf(myQueueAll.size()));
+           while(!flaga){
+               Thread.sleep(10);
+           }
+           log.info("开始");
+           flag=false;
+           List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+           List<JSONObject> nameList0 = new ArrayList(nameList);
+           Stream myData=new Stream();
+           myData=myQueueAll.poll();
+           for(JSONObject cur:nameList){ //uid
+               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+               if(!u.uid.equals(data.uid)){
+                   log.info(u.uid);
+                   log.info(JSON.toJSONString(myData));
+                   socketIOClientMap.get(u.uid).sendEvent("stream",myData);
+               }
+           }
+           flag=true;
+       }
+       if(data0.get("event").equals("increment")){
            log.info("increment");
+           Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
            myQueue.add(data);
+           log.info(String.valueOf(myQueue.size()));
           while(!flag){
               Thread.sleep(10);
           }
+          log.info("开始");
           flag=false;
-          List<String> nameList=redisService.get(data.rid,List.class);
-           Stream myData=new Stream();
+           List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+           List<JSONObject> nameList0 = new ArrayList(nameList);
+           Istream myData=new Istream();
            myData=myQueue.poll();
            /*myData.event=data.event;
            myData.rid=data.rid;
            myData.uid=data.uid;
            myData.frame=new Frame(data.frame.gid,data.frame.type,data.frame.style);*/
-          for(String cur:nameList){ //uid
-              if(!cur.equals(data.uid)){
+          for(JSONObject cur:nameList){ //uid
+              NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+              if(!u.uid.equals(data.uid)){
+                  log.info(u.uid);
                   log.info(JSON.toJSONString(myData));
-                  socketIOClientMap.get(cur).sendEvent("stream",myData);
+                  socketIOClientMap.get(u.uid).sendEvent("stream",myData);
               }
           }
           flag=true;
