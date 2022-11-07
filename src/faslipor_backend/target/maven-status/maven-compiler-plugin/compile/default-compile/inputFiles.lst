@@ -8,11 +8,13 @@
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/controller/LoginController.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/House.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/server/myMessageHandler.java
+/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Istream.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/Service/QueryService.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Style.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/server/ServerInitiazer.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Param.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/redis/RedisPoolFactory.java
+/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/NameList.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Redirect.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Frame.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/redis/RedisConfig.java

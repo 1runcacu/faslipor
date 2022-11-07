@@ -35,6 +35,19 @@ public class RedisService {
             returnToPool(jedis);
         }
     }
+
+    public void del(String key){
+        Jedis jedis = null;
+        try {
+            jedis =  jedisPool.getResource();
+            //生成真正的key
+            jedis.del(key);
+        }finally {
+            returnToPool(jedis);
+        }
+    }
+
+
     private void returnToPool(Jedis jedis) {
         if(jedis != null) {
             jedis.close();
