@@ -6,3 +6,6 @@
 2022/11/04 16:26:40 [notice] 18360#17140: signal process started
 2022/11/04 16:31:48 [notice] 11548#6624: signal process started
 2022/11/04 16:31:48 [error] 11548#6624: CreateFile() "E:\part5\faslipor\build\nginx-1.23.1/logs/nginx.pid" failed (2: The system cannot find the file specified)
+2022/11/07 16:54:33 [notice] 23360#35800: signal process started
+2022/11/07 16:54:33 [error] 23360#35800: OpenEvent("Global\ngx_stop_14696") failed (2: The system cannot find the file specified)
+2022/11/07 16:57:37 [alert] 35340#18116: OpenEvent("ngx_master_17624") failed (2: The system cannot find the file specified)

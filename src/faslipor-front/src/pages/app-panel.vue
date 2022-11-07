@@ -230,7 +230,7 @@ function sendCanvas(){
 const makeShape = item=>{
     const {label} = item;
     const [left,top] = [window.innerWidth/2,window.innerHeight/3];
-    const style = { top, left, width: 50, height: 50, fill: 'gray',stroke:"gray" ,radius:50,gid:ID()};
+    const style = { top, left, width: 50, height: 50, fill: 'gray',stroke:"gray" ,radius:50,gid:ID(),date:Date.now()};
     let create = null;
     switch(label){
         case "直线":
@@ -316,6 +316,17 @@ const makeShape = item=>{
     }
 }
 
+function addPixel(...args){
+    fabric.util.enlivenObjects(args, function(objects) {
+        var origRenderOnAddRemove = canvas.renderOnAddRemove;
+        canvas.renderOnAddRemove = false;
+        objects.forEach(function(o) {
+            canvas.add(o);
+        });
+        canvas.renderOnAddRemove = origRenderOnAddRemove;
+        canvas.renderAll();
+    });
+}
 
 const stream = data=>{
     try{
@@ -336,14 +347,29 @@ const stream = data=>{
             case "all":
                 canvas.loadFromJSON(frame);
                 break;
+            case "edit":
+                const Objs = canvas.getObjects();
+                const {pixel} = frame;
+                if(!Objs.find(v=>{
+                    if(v.gid===pixel.gid){
+                        // v.set(pixel);
+                        // canvas.renderAll();
+                        // v.loadFromJSON(pixel);
+                        canvas.remove(v);
+                        addPixel(pixel);
+                    }
+                    return v.gid===pixel.gid
+                })){
+                        // canvas.remove(v);
+                        addPixel(pixel);
+                }
         }
-        console.log(data)
     }catch(err){console.log(err)};
 }
 
 var canvas; 
 
-const send = throttle(()=>sendCanvas(),30);
+const send = shakeProof(()=>sendCanvas(),30);
 
 function init() {
     canvas = new fabric.Canvas('canvas') // 实例化fabric，并绑定到canvas元素上
@@ -359,7 +385,7 @@ function init() {
     });
     // 鼠标抬起时
     canvas.on('mouse:up', function(options) {
-        send();
+        // send();
         panning = false;
         canvas.selection = true;
         // console.log("鼠标抬起了：", options.e.clientX, options.e.clientY);
@@ -374,7 +400,32 @@ function init() {
         // shakeProof(()=>sendCanvas(),100);
         // console.log("鼠标移动了：", options.e.clientX, options.e.clientY);
     });
-    console.log(canvas.parent);
+    
+    canvas.on("mouse:wheel", function(options) {
+        let zoom = (options.e.deltaY > 0 ? -0.1 : 0.1) + canvas.getZoom();
+        zoom = Math.max(0.1, zoom); //最小为原来的1/10
+        zoom = Math.min(3, zoom); //最大是原来的3倍
+        const zoomPoint = new fabric.Point(options.e.pageX, options.e.pageY);
+        canvas.zoomToPoint(zoomPoint, zoom);
+    });
+
+    const modified = shakeProof((frame)=>{
+        const {room:{rid},user:{uid}} = config.value;
+        socket.emit("stream",{
+            event:"edit",
+            rid,uid,
+            frame
+        });
+    },30);
+
+    canvas.on("object:modified",function(option){
+        option.target.date = Date.now();
+        modified({
+            type:"编辑",
+            pixel:option.target.toJSON(["gid","date"])
+        });
+    });
+
     // document.querySelector(".upper-canvas").mousewheel(function(event) {
     //     const zoom = (event.deltaY > 0 ? 0.1 : -0.1) + canvas.getZoom();
     //     zoom = Math.max(0.1,zoom); //最小为原来的1/10
@@ -408,13 +459,21 @@ function init() {
     })(canvas);
 }
 
+function refresh(){
+    const {room:{rid},user:{uid}} = config.value;
+    socket.emit("stream",{
+        event:"refresh",
+        rid,uid
+    });
+}
+
 onMounted(() => {
     init();
     socket.on("stream",stream);
+    refresh();
 });
 
 onBeforeUnmount(()=>{
-    console.log(23333);
     socket.off("stream",stream);
 });
 

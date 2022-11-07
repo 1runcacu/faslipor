@@ -69,7 +69,7 @@ function createRoom(socket,params){
   };
   rooms[rid] = room;
   users[uid] = user;
-  goto(socket,`/panel?rid=${rid}&uid=${uid}`,data);
+  goto(socket,`/panel`,data);
 }
 
 function enterRoom(socket,params){
@@ -89,7 +89,7 @@ function enterRoom(socket,params){
     room,
     user
   };
-  goto(socket,`/panel?rid=${rid}&uid=${uid}`,data);
+  goto(socket,`/panel`,data);
 }
 
 function exitRoom(socket,params){
@@ -113,9 +113,9 @@ function exitUser(socket){
     if(has){
       rid = key;
       uid = has.uid;
+      exitRoom(socket,{uid,rid});
       break;
     }
-    exitRoom(socket,{uid,rid});
   }
 }
 
@@ -151,10 +151,11 @@ io.on('connection',(socket) => {
     });
     socket.on('stream',data=>{
       try{
-        const {event,rid,uid,frame} = data;
+        const {event,rid,uid,lid,frame} = data;
         switch(event){
           case "increment"://broadCastRoomUsers(rid,data);break;
-          case "all":broadCastRoomUsers(rid,data);break;
+          case "all":
+          case "edit":broadCastRoomUsers(rid,data);break;
         }
       }catch(err){}
     });

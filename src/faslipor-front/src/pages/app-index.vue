@@ -151,10 +151,6 @@ let rooms = computed(()=>{
   let result = store.state.rooms.filter(v=>{
     return !key||reg.test(v.name);
   })
-  // const len = {
-  //   mobile:3,
-  //   pc:4
-  // }[getTerminalType()];
   const len = window.innerWidth<=960?3:7;
   let i = (current.value - 1)*len;
   total.value = Math.floor((result.length/len)*10);
@@ -222,6 +218,9 @@ onMounted(() => {
   backdrop-filter: blur(5px);
   background-color: rgba(255, 255, 255, 0.1);
   box-shadow: rgb(204, 204, 204) 0px 0px 8px;
+  -webkit-column-break-inside: avoid;
+  page-break-inside:avoid;
+  column-gap: 20px;
 }
 
 /*手机 */
@@ -231,7 +230,6 @@ onMounted(() => {
   }
   #rooms{
     column-count: 2;
-    column-gap: 20px;
   }
 }
 /*平板*/
@@ -241,7 +239,6 @@ onMounted(() => {
   }
   #rooms{
     column-count: 2;
-    column-gap: 20px;
   }
 }
 
@@ -252,7 +249,6 @@ onMounted(() => {
   }
   #rooms{
     column-count: 4;
-    column-gap: 20px;
   }
 }
 
@@ -262,7 +258,6 @@ onMounted(() => {
   }
   #rooms{
     column-count: 4;
-    column-gap: 20px;
   }
 }
 /*PC*/
