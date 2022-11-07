@@ -26,16 +26,16 @@ const router = createRouter({
 });
 
 router.beforeEach((to,from,next)=>{
-  next();
-  // if(to.name==="panel"){
-  //   if(from&&from.name==="index"){
-  //     next();
-  //   }else{
-  //     next({name:"index"});
-  //   }
-  // }else{
-  //   next();
-  // }
+  // next();
+  if(to.name==="panel"){
+    if(from&&from.name==="index"){
+      next();
+    }else{
+      next({name:"index"});
+    }
+  }else{
+    next();
+  }
 })
 
 export default router;

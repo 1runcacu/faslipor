@@ -85,6 +85,7 @@ import { fabric } from 'fabric'
 import vueConsoleVue from '@/components/vue-console.vue';
 import vueOpener from '@/components/vue-opener.vue'
 import { useStore } from 'vuex';
+import {throttle,shakeProof} from "@/api/util";
 
 const graphMap = {};
 
@@ -215,10 +216,21 @@ const consoleHandle = (val)=>{
     consoleShow.value = false;
 }
 
+const ID = ()=>Date.now().toString(36);
+
+function sendCanvas(){
+    const {room:{rid},user:{uid}} = config.value;
+    socket.emit("stream",{
+        event:"all",
+        rid,uid,
+        frame:JSON.stringify(canvas.toJSON())
+    });
+}
+
 const makeShape = item=>{
     const {label} = item;
     const [left,top] = [window.innerWidth/2,window.innerHeight/3];
-    const style = { top, left, width: 50, height: 50, fill: 'gray',stroke:"gray" ,radius:50};
+    const style = { top, left, width: 50, height: 50, fill: 'gray',stroke:"gray" ,radius:50,gid:ID()};
     let create = null;
     switch(label){
         case "直线":
@@ -280,15 +292,10 @@ const makeShape = item=>{
     }
     const graph = new fabric[create.type](...create.params);
     if(graph){
-        const gid = Date.now().toString(36);
-        const frame = {
-            gid,
-            create
-        }
-        graphMap[gid] = graph;
-        graph.on('selected', function() {
-            console.log('被选中了');
-        });
+        const frame = create;
+        // graph.on('selected', function() {
+        //     sendCanvas();
+        // });
         // after:render：画布重绘后
         // object:selected：对象被选中
         // object:moving：对象移动
@@ -311,18 +318,23 @@ const makeShape = item=>{
 
 
 const stream = data=>{
-    const {event,frame} = data;
+    console.log(data)
+    const {rid,uid,event,frame} = data;
+    if(uid === config.value.user.uid){
+        return;
+    }
     switch(event){
         case "increment":
-            const {create,gid} = frame;
-            if(!graphMap[gid]){
-                const graph = new fabric[create.type](...create.params);
-                graphMap[gid] = graph;
-                graph.on('selected', function() {
-                    console.log('被选中了');
-                });
-                canvas.add(graph);
-            }
+            const create = frame;
+            const graph = new fabric[create.type](...create.params);
+            // graph.on('selected', function() {
+            //     sendCanvas();
+            //     console.log('被选中了');
+            // });
+            canvas.add(graph);
+            break;
+        case "all":
+            canvas.loadFromJSON(frame);
             break;
     }
     console.log(data)
@@ -330,17 +342,23 @@ const stream = data=>{
 
 var canvas; 
 
+const send = throttle(()=>sendCanvas(),10);
+
 function init() {
     canvas = new fabric.Canvas('canvas') // 实例化fabric，并绑定到canvas元素上
     canvas.on('mouse:down', function(options) {
         // console.log("鼠标按下了：", options.e.clientX, options.e.clientY);
+        // shakeProof(()=>sendCanvas(),100);
+        send();
     });
     // 鼠标抬起时
     canvas.on('mouse:up', function(options) {
+        send();
         // console.log("鼠标抬起了：", options.e.clientX, options.e.clientY);
     });
     // 鼠标移动时
     canvas.on('mouse:move', function(options) {
+        // shakeProof(()=>sendCanvas(),100);
         // console.log("鼠标移动了：", options.e.clientX, options.e.clientY);
     });
     // 线性渐变
