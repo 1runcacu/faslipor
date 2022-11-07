@@ -69,7 +69,7 @@ function createRoom(socket,params){
   };
   rooms[rid] = room;
   users[uid] = user;
-  goto(socket,"/panel",data);
+  goto(socket,`/panel?rid=${rid}&uid=${uid}`,data);
 }
 
 function enterRoom(socket,params){
@@ -89,7 +89,7 @@ function enterRoom(socket,params){
     room,
     user
   };
-  goto(socket,"/panel",data);
+  goto(socket,`/panel?rid=${rid}&uid=${uid}`,data);
 }
 
 function exitRoom(socket,params){
@@ -136,6 +136,7 @@ io.on('connection',(socket) => {
     const id = ID();
     console.log(`${id}上线`);
     sockets[id] = socket;
+    console.log(Object.keys(sockets));
     socket.on('query',data=>{
       try{
         const {event,params} = data;
