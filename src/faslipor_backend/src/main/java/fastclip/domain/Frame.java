@@ -5,5 +5,4 @@ public class Frame {
     public String gid;
     public String type;
     public Style style;
-
 }

@@ -16,6 +16,7 @@ import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import sun.misc.Queue;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,8 +40,11 @@ public class MessageEventHandler {
     @Autowired
     private QueryService queryService;
 
-    public static Set<SocketIOClient> socketIOClientMap = new HashSet<>();
+    public static Set<SocketIOClient> socketIOClientSet = new HashSet<>();
 
+    public static Map<String,SocketIOClient> socketIOClientMap = new ConcurrentHashMap<>();
+
+    public static java.util.Queue<Stream> myQueue=new LinkedList<>();
 
     public static volatile boolean flag=true;
 
@@ -50,23 +54,23 @@ public class MessageEventHandler {
           log.info("query");
           if(data.event.equals("add"))
         { log.info("add");
-            client.sendEvent("redirect", queryService.addRoom(data.params.roomName,data.params.description));
+            client.sendEvent("redirect", queryService.addRoom(client,data.params.roomName,data.params.description));
         }
-
         if(data.event.equals("select")){
             log.info("select");
-            client.sendEvent("redirect",queryService.select(data.params.rid));
+            log.info(JSON.toJSONString(data));
+            client.sendEvent("redirect",queryService.select(client,data.params.rid));
         }
         if(data.event.equals("exit")){
             log.info("exit");
-            client.sendEvent("redirect",queryService.exit(data.params.rid,data.params.uid));
+            client.sendEvent("redirect",queryService.exit(client,data.params.rid,data.params.uid));
         }
           if(data.event.equals("list")){
             log.info("list");
             client.sendEvent("asset",queryService.list());
           }else{
               int i=0;
-              for(SocketIOClient cur:socketIOClientMap){
+              for(SocketIOClient cur:socketIOClientSet){
                   cur.sendEvent("asset",queryService.list());
                   log.info(i++ +" "+queryService.list().toString());
               }
@@ -79,16 +83,26 @@ public class MessageEventHandler {
     @OnEvent(value="stream")
     public void onStream(SocketIOClient client, AckRequest request, Stream data) throws InterruptedException {
        log.info("stream");
+       log.info(JSON.toJSONString(data));
        if(data.event.equals("increment")){
            log.info("increment");
+           myQueue.add(data);
           while(!flag){
               Thread.sleep(10);
           }
           flag=false;
           List<String> nameList=redisService.get(data.rid,List.class);
-          for(String cur:nameList){
-              if(!cur.equals(data.uid)){}
-             // socketIOClientMap.get(cur).sendEvent("stream","123");
+           Stream myData=new Stream();
+           myData=myQueue.poll();
+           /*myData.event=data.event;
+           myData.rid=data.rid;
+           myData.uid=data.uid;
+           myData.frame=new Frame(data.frame.gid,data.frame.type,data.frame.style);*/
+          for(String cur:nameList){ //uid
+              if(!cur.equals(data.uid)){
+                  log.info(JSON.toJSONString(myData));
+                  socketIOClientMap.get(cur).sendEvent("stream",myData);
+              }
           }
           flag=true;
        }
@@ -107,8 +121,8 @@ public class MessageEventHandler {
         }
 
 
-         socketIOClientMap.add(client);
-        log.info(String.valueOf(socketIOClientMap.size()));
+         socketIOClientSet.add(client);
+        log.info(String.valueOf(socketIOClientSet.size()));
         String message="d";
         List<House> r = redisService.get("list", List.class);
         if (r == null) {
@@ -128,6 +142,7 @@ public class MessageEventHandler {
      */
     @OnDisconnect
     public void onDisconnect(SocketIOClient client) {
+        socketIOClientSet.remove(client);
         log.info("客户端:" + client.getSessionId() + "断开连接");
     }
 
@@ -136,7 +151,7 @@ public class MessageEventHandler {
      * 广播消息
      */
     public void sendBroadcast() {
-        for (SocketIOClient client : socketIOClientMap) {
+        for (SocketIOClient client : socketIOClientSet) {
             if (client.isChannelOpen()) {
                 client.sendEvent("redirect", "当前时间", System.currentTimeMillis());
             }
