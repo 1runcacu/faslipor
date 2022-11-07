@@ -53,6 +53,7 @@ import vueInputVue from '@/components/vue-input.vue';
 import winUI from '@/components/win-ui.vue';
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex';
+// import { getTerminalType } from '@/router';
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 
@@ -150,9 +151,14 @@ let rooms = computed(()=>{
   let result = store.state.rooms.filter(v=>{
     return !key||reg.test(v.name);
   })
-  let i = (current.value - 1)*7;
-  total.value = Math.floor((result.length/7)*10);
-  return result.slice(i,i+7);
+  // const len = {
+  //   mobile:3,
+  //   pc:4
+  // }[getTerminalType()];
+  const len = window.innerWidth<=960?3:7;
+  let i = (current.value - 1)*len;
+  total.value = Math.floor((result.length/len)*10);
+  return result.slice(i,i+len);
 });
 
 onMounted(() => {
@@ -197,7 +203,6 @@ onMounted(() => {
 }
 #card{
   height: 100%;
-  width: 80%;
   /* width: calc(100% - 600px); */
   display: flex;
   flex-direction: column;
@@ -207,18 +212,72 @@ onMounted(() => {
   padding: 20px;
   overflow: hidden;
 }
+
 #rooms{
   flex:1;
   margin: 40px;
   padding: 20px 20px 0 20px;
   width: 80%;
-  column-count: 4;
-  column-gap: 20px;
   border-radius: 1rem;
   backdrop-filter: blur(5px);
   background-color: rgba(255, 255, 255, 0.1);
   box-shadow: rgb(204, 204, 204) 0px 0px 8px;
 }
+
+/*手机 */
+@media screen and (max-width:600px){
+  #card{
+    width: calc(100% - 20px);
+  }
+  #rooms{
+    column-count: 2;
+    column-gap: 20px;
+  }
+}
+/*平板*/
+@media screen and (min-width:600px) and (max-width:960px){
+  #card{
+    width: calc(100% - 80px);
+  }
+  #rooms{
+    column-count: 2;
+    column-gap: 20px;
+  }
+}
+
+/*PC 2*/
+@media screen and (min-width:960px) and (max-width:1200px){
+  #card{
+    width: calc(100% - 80px);
+  }
+  #rooms{
+    column-count: 4;
+    column-gap: 20px;
+  }
+}
+
+@media screen and (min-width:1200px) and (max-width:1500px){
+  #card{
+    width: calc(100% - 200px);
+  }
+  #rooms{
+    column-count: 4;
+    column-gap: 20px;
+  }
+}
+/*PC*/
+@media screen and (min-width:1500px){
+  #card{
+    width: calc(100% - 600px);
+  }
+  #rooms{
+    column-count: 4;
+    column-gap: 20px;
+  }
+}
+
+
+
 #rooms>div{
   height: calc(100% / 2.2);
   margin-bottom: 20px;

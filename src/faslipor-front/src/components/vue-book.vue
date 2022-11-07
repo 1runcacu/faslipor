@@ -1,5 +1,5 @@
 <template>
-    <div class="drag-box" v-if="!winShow" @dblclick="open">
+    <div class="drag-box" v-if="!winShow" v-click2="open">
       <div class="ban-select-font" v-drag>
         <img src="@/assets/logo.png" id="logo"/>
       </div>
@@ -13,7 +13,7 @@
           <el-button link @click="isCollapse=true" v-show="!isCollapse"><el-icon><CaretLeft /></el-icon></el-button>
         </template>
         <div class="body">
-            <el-scrollbar class="left">
+            <el-scrollbar class="left" @touchmove.stop>
                 <el-menu
                     default-active="2"
                     class="el-menu-vertical-demo"
@@ -54,7 +54,7 @@
                     </el-menu-item>
                 </el-menu>
             </el-scrollbar>
-            <el-scrollbar class=right>
+            <el-scrollbar class="right" @touchmove.stop>
                 <el-collapse v-model="activeNames" @change="handleChange">
                     <el-collapse-item title="Consistency" name="1">
                         <div>

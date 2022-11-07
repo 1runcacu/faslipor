@@ -44,7 +44,7 @@
             </el-collapse-item>
             <el-collapse-item title="形状" name="2">
                 <div class="icons">
-                    <img v-for="item in toolsConfig.shape" :src="item.src" @dblclick="makeShape(item)"/>
+                    <img v-for="item in toolsConfig.shape" :src="item.src" v-click2="()=>makeShape(item)"/>
                 </div>
             </el-collapse-item>
             <el-collapse-item title="自定义" name="3">
@@ -318,49 +318,70 @@ const makeShape = item=>{
 
 
 const stream = data=>{
-    console.log(data)
-    const {rid,uid,event,frame} = data;
-    if(uid === config.value.user.uid){
-        return;
-    }
-    switch(event){
-        case "increment":
-            const create = frame;
-            const graph = new fabric[create.type](...create.params);
-            // graph.on('selected', function() {
-            //     sendCanvas();
-            //     console.log('被选中了');
-            // });
-            canvas.add(graph);
-            break;
-        case "all":
-            canvas.loadFromJSON(frame);
-            break;
-    }
-    console.log(data)
+    try{
+        const {rid,uid,event,frame} = data;
+        if(uid === config.value.user.uid){
+            return;
+        }
+        switch(event){
+            case "increment":
+                const create = frame;
+                const graph = new fabric[create.type](...create.params);
+                // graph.on('selected', function() {
+                //     sendCanvas();
+                //     console.log('被选中了');
+                // });
+                canvas.add(graph);
+                break;
+            case "all":
+                canvas.loadFromJSON(frame);
+                break;
+        }
+        console.log(data)
+    }catch(err){console.log(err)};
 }
 
 var canvas; 
 
-const send = throttle(()=>sendCanvas(),10);
+const send = throttle(()=>sendCanvas(),30);
 
 function init() {
     canvas = new fabric.Canvas('canvas') // 实例化fabric，并绑定到canvas元素上
+    let panning = false;
     canvas.on('mouse:down', function(options) {
         // console.log("鼠标按下了：", options.e.clientX, options.e.clientY);
         // shakeProof(()=>sendCanvas(),100);
-        send();
+        // send();
+        if(options.e.ctrlKey) {
+          panning = true;
+          canvas.selection = false;
+        }
     });
     // 鼠标抬起时
     canvas.on('mouse:up', function(options) {
         send();
+        panning = false;
+        canvas.selection = true;
         // console.log("鼠标抬起了：", options.e.clientX, options.e.clientY);
     });
     // 鼠标移动时
     canvas.on('mouse:move', function(options) {
+        if (panning && options && options.e) {
+            const delta = new fabric.Point(options.e.movementX, options.e.movementY);
+            canvas.relativePan(delta);
+        }
+        // send();
         // shakeProof(()=>sendCanvas(),100);
         // console.log("鼠标移动了：", options.e.clientX, options.e.clientY);
     });
+    console.log(canvas.parent);
+    // document.querySelector(".upper-canvas").mousewheel(function(event) {
+    //     const zoom = (event.deltaY > 0 ? 0.1 : -0.1) + canvas.getZoom();
+    //     zoom = Math.max(0.1,zoom); //最小为原来的1/10
+    //     zoom = Math.min(3,zoom); //最大是原来的3倍
+    //     const zoomPoint = new fabric.Point(event.offsetX, event.offsetY);
+    //     canvas.zoomToPoint(zoomPoint, zoom);
+    // });
     // 线性渐变
     // let gradient = new fabric.Gradient({
     //   type: 'linear', // linear or radial

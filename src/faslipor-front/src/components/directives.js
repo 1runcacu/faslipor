@@ -12,6 +12,15 @@ function sortLayout(id){
   });
 }
 
+function changeDevice(e){
+  if(/touch/.test(e.type)){
+    if(e.targetTouches&&e.targetTouches.length>0){
+      return e.targetTouches[0];
+    }
+  }
+  return e; 
+}
+
 const directives = {
   drag: {
     mounted(el, binding) {
@@ -28,6 +37,7 @@ const directives = {
       const onmousedown = (eve) => {
         sortLayout(id);
         eve = eve || window.event;
+        eve = changeDevice(eve);
         const mx = eve.pageX; //鼠标点击时的坐标
         const my = eve.pageY; //鼠标点击时的坐标
         const dleft = odiv.offsetLeft; //窗口初始位置
@@ -38,9 +48,12 @@ const directives = {
         const clientHeight = document.documentElement.clientHeight; //页面的高
         const oHeight = odiv.clientHeight; //窗口的高度
         const maxY = clientHeight - oHeight; //y轴能移动的最大距离
+        // console.log(mx,my,dleft,dtop);
         const onmousemove = (e) => {
-          const x = e.pageX;
-          const y = e.pageY;
+          // const x = e.pageX;
+          // const y = e.pageY;
+          e = changeDevice(e);
+          const [x,y] = [e.pageX,e.pageY];
           let left = x - mx + dleft; //移动后的新位置
           let top = y - my + dtop; //移动后的新位置
           if (left < 0) left = 0;
@@ -54,23 +67,23 @@ const directives = {
           odiv.style.marginLeft = 0;
           odiv.style.marginTop = 0;
         };
-        document.addEventListener("mousemove",onmousemove,false);
-        document.addEventListener("touchmove",onmousemove,false);
-        // document.onmousemove = onmousemove;
-        // document.ontouchmove = onmousemove;
-        document.onmouseup = () => {
-          document.removeEventListener("mousemove",onmousemove);
-          document.removeEventListener("touchmove",onmousemove);
-          // document.onmousemove = null;
-          // document.ontouchmove = null;
+        // document.addEventListener("mousemove",onmousemove,false);
+        // document.addEventListener("touchmove",onmousemove,false);
+        document.onmousemove = onmousemove;
+        document.ontouchmove = onmousemove;
+         const onmouseup = () => {
+          // document.removeEventListener("mousemove",onmousemove);
+          // document.removeEventListener("touchmove",onmousemove);
+          document.onmousemove = null;
+          document.ontouchmove = null;
         };
+        document.onmouseup = onmouseup;
+        document.ontouchend = onmouseup;
       };
-      // document.addEventListener("mousedown",onmousedown);
-      // document.addEventListener("touchstart",onmousedown);
-      el.addEventListener("mousedown",onmousedown,false);
-      el.addEventListener("touchstart",onmousedown,false);
-      // el.onmousedown = onmousedown;
-      // el.ontouchstart = onmousedown;
+      // el.addEventListener("mousedown",onmousedown,false);
+      // el.addEventListener("touchstart",onmousedown,false);
+      el.onmousedown = onmousedown;
+      el.ontouchstart = onmousedown;
     }
   },
   resize: {
@@ -95,6 +108,7 @@ const directives = {
       // 获取鼠标所在方位
       const getDirection = (ev) => {
         let dir = "";
+        ev = changeDevice(ev);
         const xP = ev.offsetX;
         const yP = ev.offsetY;
         const offset = 8; //内边距为多少时触发
@@ -111,6 +125,7 @@ const directives = {
       };
       // 变更尺寸方法
       const changeSize = (e) => {
+        e = changeDevice(e);
         // 两个点之间的差值，计算鼠标位移数值
         const [disX, disY] = computedDistance(
           { x: pos.x, y: pos.y },
@@ -177,6 +192,7 @@ const directives = {
       //鼠标按下 触发变更事件
       const onmousedown = (e) => {
         if (e.target.name !== "resize") return;
+        e = changeDevice(e);
         let d = getDirection(e);
         //当位置为四个边和四个角才开启尺寸修改
         if (mouseDir[d]) {
@@ -187,17 +203,18 @@ const directives = {
           pos.x = e.pageX;
           pos.y = e.pageY;
           pos.dir = d;
-          document.addEventListener("mousemove",changeSize,false);
-          document.addEventListener("touchmove",changeSize,false);
-          // document.onmousemove = changeSize;
-          // document.ontouchmove = changeSize;
+          // document.addEventListener("mousemove",changeSize,false);
+          // document.addEventListener("touchmove",changeSize,false);
+          document.onmousemove = changeSize;
+          document.ontouchmove = changeSize;
         }
         document.onmouseup = resetData;
+        document.ontouchend = resetData;
       };
-      el.addEventListener("mousedown",onmousedown,false);
-      el.addEventListener("touchstart",onmousedown,false);
-      // el.onmousedown = onmousedown;
-      // el.ontouchstart = onmousedown;
+      // el.addEventListener("mousedown",onmousedown,false);
+      // el.addEventListener("touchstart",onmousedown,false);
+      el.onmousedown = onmousedown;
+      el.ontouchstart = onmousedown;
       /** 鼠标样式变更 */
       const changeShowCursor = throttle((e) => {
         e.preventDefault();
@@ -208,10 +225,10 @@ const directives = {
         // 确定是某个方位的动向
         el.style.cursor = mouseDir[d] || "default";
       }, 0); //节流0.2s
-      el.addEventListener("mousemove",changeShowCursor,false);
-      el.addEventListener("touchmove",changeShowCursor,false);
-      // el.onmousemove = changeShowCursor; //监听根元素上移动的鼠标事件
-      // el.ontouchmove = changeShowCursor;
+      // el.addEventListener("mousemove",changeShowCursor,false);
+      // el.addEventListener("touchmove",changeShowCursor,false);
+      el.onmousemove = changeShowCursor; //监听根元素上移动的鼠标事件
+      el.ontouchmove = changeShowCursor;
       //数据重置
       var resetData = () => {
         pos.width = 0;
@@ -221,13 +238,31 @@ const directives = {
         pos.x = 0;
         pos.y = 0;
         pos.dir = "";
-        document.removeEventListener("mousemove",changeSize);
-        document.removeEventListener("touchmove",changeSize);
-        // document.onmousemove = null;
-        // document.ontouchmove = null;
+        // document.removeEventListener("mousemove",changeSize);
+        // document.removeEventListener("touchmove",changeSize);
+        document.onmousemove = null;
+        document.ontouchmove = null;
       };
     }
   },
+  click2:{
+    mounted:(()=>{
+      let flag = 0;
+      return function(el,binding){
+        el.addEventListener("click",()=>{
+          flag++;
+          setTimeout(() => {
+            flag = 0;
+          }, 500);
+          if(flag==2){
+            try{
+              binding.value();
+            }catch(err){}
+          }
+        })
+      }
+    })()
+  }
 };
 
 export default (app) => {
