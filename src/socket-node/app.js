@@ -126,7 +126,7 @@ function broadCastList(list){
 }
 
 function broadCastRoomUsers(rid,data){
-  console.log(roomsUsers[rid]);
+  // console.log(roomsUsers[rid]);
   roomsUsers[rid].forEach(user=>{
     user.socket.emit("stream",data)
   })
@@ -136,6 +136,7 @@ io.on('connection',(socket) => {
     const id = ID();
     console.log(`${id}上线`);
     sockets[id] = socket;
+    goto(socket,"/",{});
     console.log(Object.keys(sockets));
     socket.on('query',data=>{
       try{
@@ -152,7 +153,8 @@ io.on('connection',(socket) => {
       try{
         const {event,rid,uid,frame} = data;
         switch(event){
-          case "increment":broadCastRoomUsers(rid,data);break;
+          case "increment"://broadCastRoomUsers(rid,data);break;
+          case "all":broadCastRoomUsers(rid,data);break;
         }
       }catch(err){}
     });
@@ -169,9 +171,8 @@ io.on('connection',(socket) => {
       console.log(`${id}重新连接`);
       try{
         sockets[id] = socket;
-        setTimeout(() => {
-          reqlist(socket,Object.values(rooms));
-        }, 500);
+        goto(socket,"/",{});
+        reqlist(socket,Object.values(rooms));
       }catch(err){}
     });
     socket.on('disconnect', () => {
