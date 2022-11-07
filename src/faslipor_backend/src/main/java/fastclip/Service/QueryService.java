@@ -2,10 +2,8 @@ package fastclip.Service;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import fastclip.domain.House;
-import fastclip.domain.Redirect;
-import fastclip.domain.Result;
-import fastclip.domain.User;
+import com.corundumstudio.socketio.SocketIOClient;
+import fastclip.domain.*;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 import static com.alibaba.fastjson.JSONObject.*;
+import static fastclip.server.MessageEventHandler.socketIOClientMap;
 
 @Slf4j
 @Service
@@ -21,7 +20,7 @@ public class QueryService {
 
     @Autowired
     RedisService redisService;
-    public Redirect addRoom(String roomName,String brief){
+    public Redirect addRoom(SocketIOClient client,String roomName,String brief){
         //新建房间
         House newRoom=new House();
         Date time0 = new Date();
@@ -37,14 +36,18 @@ public class QueryService {
         Date time1 = new Date();
         newUser.uid = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
         newUser.state = "创建者";
+        socketIOClientMap.put(newUser.uid,client);
         //加入房间列表
         List<JSONObject> r = redisService.get("list", List.class);
         List<JSONObject> arrList = new ArrayList(r);
         arrList.add(JSON.parseObject(JSON.toJSONString(newRoom)));
         redisService.set("list",arrList);
         //名单
-        List<String> nameList=new ArrayList<>();
-        nameList.add(newUser.uid);
+        NameList newNameList=new NameList();
+        newNameList.uid=newUser.uid;
+        newNameList.state=newUser.state;
+        List<NameList> nameList=new ArrayList<>();
+        nameList.add(newNameList);
         redisService.set(newRoom.rid, newRoom);
         redisService.set(newRoom.rid+"nameList",nameList);
         redisService.set(newUser.uid,newUser);
@@ -68,7 +71,8 @@ public class QueryService {
         return myResult;
     }
 
-    public Redirect exit(String rid,String uid){
+    public Redirect exit(SocketIOClient client,String rid, String uid){
+        socketIOClientMap.remove(uid);//移除流接受列表
         Redirect redirect=new Redirect();
         House myRoom=redisService.get(rid, House.class);
         List<JSONObject> r = redisService.get("list", List.class);
@@ -85,6 +89,20 @@ public class QueryService {
                 break;
             }
         }
+        List<JSONObject> myNameList = redisService.get(rid+"nameList", List.class);
+        List<JSONObject> myNameList0 = new ArrayList(myNameList);
+        log.info(r.toString());
+        Iterator<JSONObject> iterator0 = myNameList0.iterator();
+        NameList p=null;
+        while (iterator0.hasNext()) {
+            p = JSON.parseObject(String.valueOf(iterator0.next()),NameList.class);
+            log.info(JSON.toJSONString(p));
+            if (uid.equals(p.uid)) {
+                log.info(uid+"  "+p.uid);
+                iterator0.remove();//使用迭代器的删除
+                break;
+            }
+        }
         log.info("删后的"+arrList.toString());
         if(u.stats>1){
             myRoom.stats--;
@@ -93,6 +111,7 @@ public class QueryService {
         log.info("判断人数后的"+arrList.toString());
         redisService.set("list",arrList);
         redisService.set(myRoom.rid,myRoom);
+        redisService.set(rid+"nameList",myNameList0);
         Result myResult=new Result();
         myResult.data=redisService.get("list", List.class);
         log.info("redis里的"+myResult.data.toString());
@@ -102,7 +121,7 @@ public class QueryService {
     }
 
 
-    public Redirect select(String rid){
+    public Redirect select(SocketIOClient client,String rid){
         Redirect redirect=new Redirect();
         House myRoom=redisService.get(rid, House.class);
         if(myRoom==null){
@@ -136,12 +155,16 @@ public class QueryService {
         User newUser = new User();
         Date time1 = new Date();
         newUser.uid = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
-        newUser.state = "创建者";
-       // List<JSONObject> nameList=redisService.get(rid+"nameList",List.class);
-       // List<JSONObject> nameList0 = new ArrayList(r);
-       // nameList0.add(JSON.parseObject(String.valueOf(newUser.uid)));
-       redisService.set(myRoom.rid, myRoom);
-     //  redisService.set(myRoom.rid+"nameList",nameList0);
+        newUser.state = "游客";
+        socketIOClientMap.put(newUser.uid,client);
+        NameList newNameList=new NameList();
+        newNameList.uid=newUser.uid;
+        newNameList.state=newUser.state;
+        List<JSONObject> nameList=redisService.get(rid+"nameList",List.class);
+        List<JSONObject> nameList0 = new ArrayList(nameList);
+        nameList0.add(JSON.parseObject(JSON.toJSONString(newNameList)));
+        redisService.set(myRoom.rid, myRoom);
+        redisService.set(myRoom.rid+"nameList",nameList0);
         redisService.set(newUser.uid,newUser);
         redirect.path="/panel";
         redirect.params.user=newUser;
