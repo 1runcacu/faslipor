@@ -25,6 +25,17 @@ const router = createRouter({
   routes,
 });
 
+export function getTerminalType(){
+  if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+      return  'pc';
+  } else if (/(Android)/i.test(navigator.userAgent)) {
+      return  'mobile';
+  } else {
+      return 'pc';
+  }
+}
+
+
 router.beforeEach((to,from,next)=>{
   // next();
   if(to.name==="panel"){
