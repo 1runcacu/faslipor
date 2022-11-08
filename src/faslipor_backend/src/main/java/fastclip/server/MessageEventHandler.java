@@ -46,6 +46,8 @@ public class MessageEventHandler {
 
     public static Map<SocketIOClient,String> socketIOClientMap1=new ConcurrentHashMap<>();
 
+    public static Map<String,JSONObject> nowAllMap=new ConcurrentHashMap<>(); //rid, (gid,pixel)
+
     public static  LinkedList<Istream> myQueue=new LinkedList<>();
 
     public static java.util.Queue<JSONObject> myQueueAll=new LinkedList<>();
@@ -88,10 +90,25 @@ public class MessageEventHandler {
         //sendBroadcast();
     }
 
+//event,rid,uid,lid,frame:roomBuffer[rid]
     @OnEvent(value="stream")
     public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException {
        log.info("stream");
        log.info(JSON.toJSONString(data0));
+       if(data0.get("event").equals("refresh")) {
+           log.info("refresh");
+           String uid = socketIOClientMap1.get(client);
+           House myRoom = redisService.get(uid + "Room", House.class);
+           if(!nowAllMap.containsKey(myRoom.rid)) return;
+           Refresh myRe=new Refresh();
+           myRe.rid=myRoom.rid;
+           myRe.uid=uid;
+           log.info(nowAllMap.containsKey(myRoom.rid)+" ");
+           myRe.frame=nowAllMap.get(myRoom.rid);
+           log.info(myRe.frame.toJSONString());
+           log.info(JSONObject.toJSONString(myRe));
+           client.sendEvent("stream",myRe);
+       }
        if(data0.get("event").equals("all")) {
           log.info("all");
            //String data=JSON.toJSONString(data0);
@@ -100,7 +117,7 @@ public class MessageEventHandler {
           log.info(String.valueOf(myQueueAll.size()));
            while(!flaga){
                Thread.sleep(10);
-           }1667869490284
+           }
            log.info("开始");
            flag=false;
            List<JSONObject> nameList=redisService.get(data0.get("rid")+"nameList",List.class);
@@ -147,18 +164,33 @@ public class MessageEventHandler {
            }
            myQueue.add(data);
            log.info(String.valueOf(myQueue.size()));
+           log.info(String.valueOf(flag)+"转发");
           while(!flag){
               Thread.sleep(10);
+              log.info(data.frame.pixel.get("date").toString()+"的"+Thread.currentThread().getName() +"在等待");
           }
           log.info("开始");
           flag=false;
+          log.info(String.valueOf(flag)+"不允许转发");
            List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
            List<JSONObject> nameList0 = new ArrayList(nameList);
            Istream myData=new Istream();
            myData=myQueue.removeLast();
+
+           //更新当前图层
+           //JSONString all=nowAllMap.get(myData.rid);
+           Map<String,JSONObject> all=JSON.toJavaObject(nowAllMap.get(myData.rid),Map.class);
+           if(all==null){
+               all=new HashMap<>();
+           }
+           log.info(all.toString());
+           all.put(myData.frame.pixel.get("gid").toString(),myData.frame.pixel);
+           log.info("put"+myData.rid);
+           nowAllMap.put(myData.rid, (JSONObject) JSONObject.toJSON(all));
            pre=Long.valueOf(myData.frame.pixel.get("date").toString());
           for(JSONObject cur:nameList0){ //uid
               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+              //Thread.sleep(1000);
               if(!u.uid.equals(data.uid)){
                   log.info(u.uid);
                   log.info(JSON.toJSONString(myData));
