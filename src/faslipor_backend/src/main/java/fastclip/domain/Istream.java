@@ -8,4 +8,5 @@ public class Istream {
     public String uid;
     public String rid;
     public Frame frame;
+    public String lid;
 }

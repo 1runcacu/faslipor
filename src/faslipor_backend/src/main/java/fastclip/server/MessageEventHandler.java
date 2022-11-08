@@ -13,6 +13,7 @@ import fastclip.domain.*;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
+import org.json.JSONString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import sun.misc.Queue;
@@ -45,9 +46,13 @@ public class MessageEventHandler {
 
     public static Map<SocketIOClient,String> socketIOClientMap1=new ConcurrentHashMap<>();
 
-    public static java.util.Queue<Istream> myQueue=new LinkedList<>();
+    public static Map<String,JSONObject> nowAllMap=new ConcurrentHashMap<>(); //rid, (gid,pixel)
 
-    public static java.util.Queue<Stream> myQueueAll=new LinkedList<>();
+    public static  LinkedList<Istream> myQueue=new LinkedList<>();
+
+    public static java.util.Queue<JSONObject> myQueueAll=new LinkedList<>();
+
+    public static Long pre= Long.valueOf(0);
 
     public static volatile boolean flag=true;
 
@@ -85,55 +90,107 @@ public class MessageEventHandler {
         //sendBroadcast();
     }
 
+//event,rid,uid,lid,frame:roomBuffer[rid]
     @OnEvent(value="stream")
     public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException {
        log.info("stream");
        log.info(JSON.toJSONString(data0));
+       if(data0.get("event").equals("refresh")) {
+           log.info("refresh");
+           String uid = socketIOClientMap1.get(client);
+           House myRoom = redisService.get(uid + "Room", House.class);
+           if(!nowAllMap.containsKey(myRoom.rid)) return;
+           Refresh myRe=new Refresh();
+           myRe.rid=myRoom.rid;
+           myRe.uid=uid;
+           log.info(nowAllMap.containsKey(myRoom.rid)+" ");
+           myRe.frame=nowAllMap.get(myRoom.rid);
+           log.info(myRe.frame.toJSONString());
+           log.info(JSONObject.toJSONString(myRe));
+           client.sendEvent("stream",myRe);
+       }
        if(data0.get("event").equals("all")) {
           log.info("all");
-          Stream data=JSON.parseObject(JSON.toJSONString(data0),Stream.class);
-          myQueueAll.add(data);
+           //String data=JSON.toJSONString(data0);
+          //Stream data=JSON.parseObject(JSON.toJSONString(data0),Stream.class);
+         /* myQueueAll.add(data0);
           log.info(String.valueOf(myQueueAll.size()));
            while(!flaga){
                Thread.sleep(10);
            }
            log.info("开始");
            flag=false;
-           List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+           List<JSONObject> nameList=redisService.get(data0.get("rid")+"nameList",List.class);
            List<JSONObject> nameList0 = new ArrayList(nameList);
-           Stream myData=new Stream();
-           myData=myQueueAll.poll();
-           for(JSONObject cur:nameList){ //uid
+           JSONObject myData=myQueueAll.poll();
+           for(JSONObject cur:nameList0){ //uid
                NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
-               if(!u.uid.equals(data.uid)){
+               if(!u.uid.equals(data0.get("uid"))){
                    log.info(u.uid);
                    log.info(JSON.toJSONString(myData));
                    socketIOClientMap.get(u.uid).sendEvent("stream",myData);
                }
            }
-           flag=true;
+           flag=true;*/
        }
        if(data0.get("event").equals("increment")){
+         //  Long dataNext=Long.valueOf(JSON.parseObject(data0.get("frame").toString()).get("params").toString()     toString());
            log.info("increment");
+           List<JSONObject> nameList=redisService.get(data0.get("rid")+"nameList",List.class);
+           List<JSONObject> nameList0 = new ArrayList(nameList);
+         //  Istream myData=new Istream();
+          // pre=Long.valueOf(myData.frame.pixel.get("date").toString());
+           for(JSONObject cur:nameList0){ //uid
+               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+               if(!u.uid.equals(data0.get("rid"))){
+                   log.info(u.uid);
+                   log.info(JSON.toJSONString(data0));
+                   socketIOClientMap.get(u.uid).sendEvent("stream",data0);
+               }
+           }
+           flag=true;
+       }
+
+       if(data0.get("event").equals("edit")){
+           log.info("edit");
            Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
            //查看时间戳比队尾的大才加，否则扔掉
+           Long dateNext= Long.valueOf(data.frame.pixel.get("date").toString());
+           if(myQueue.size()==0&&dateNext<pre){
+           return;
+           }
+           if(myQueue.size()>0&&Long.valueOf(myQueue.getFirst().frame.pixel.get("date").toString())>dateNext){
+               return;
+           }
            myQueue.add(data);
            log.info(String.valueOf(myQueue.size()));
+           log.info(String.valueOf(flag)+"转发");
           while(!flag){
               Thread.sleep(10);
+              log.info(data.frame.pixel.get("date").toString()+"的"+Thread.currentThread().getName() +"在等待");
           }
           log.info("开始");
           flag=false;
+          log.info(String.valueOf(flag)+"不允许转发");
            List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
            List<JSONObject> nameList0 = new ArrayList(nameList);
            Istream myData=new Istream();
-           myData=myQueue.poll();
-           /*myData.event=data.event;
-           myData.rid=data.rid;
-           myData.uid=data.uid;
-           myData.frame=new Frame(data.frame.gid,data.frame.type,data.frame.style);*/
-          for(JSONObject cur:nameList){ //uid
+           myData=myQueue.removeLast();
+
+           //更新当前图层
+           //JSONString all=nowAllMap.get(myData.rid);
+           Map<String,JSONObject> all=JSON.toJavaObject(nowAllMap.get(myData.rid),Map.class);
+           if(all==null){
+               all=new HashMap<>();
+           }
+           log.info(all.toString());
+           all.put(myData.frame.pixel.get("gid").toString(),myData.frame.pixel);
+           log.info("put"+myData.rid);
+           nowAllMap.put(myData.rid, (JSONObject) JSONObject.toJSON(all));
+           pre=Long.valueOf(myData.frame.pixel.get("date").toString());
+          for(JSONObject cur:nameList0){ //uid
               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+              //Thread.sleep(1000);
               if(!u.uid.equals(data.uid)){
                   log.info(u.uid);
                   log.info(JSON.toJSONString(myData));

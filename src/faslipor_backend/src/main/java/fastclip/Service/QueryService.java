@@ -41,6 +41,7 @@ public class QueryService {
         socketIOClientMap1.put(client,newUser.uid);
         //加入房间列表
         List<JSONObject> r = redisService.get("list", List.class);
+        if(r==null) r=new ArrayList<>();
         List<JSONObject> arrList = new ArrayList(r);
         arrList.add(JSON.parseObject(JSON.toJSONString(newRoom)));
         redisService.set("list",arrList);
