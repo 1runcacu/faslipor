@@ -18,12 +18,10 @@
             </div>
           </template>
           <div id="Room">
-            &nbsp;&nbsp;&nbsp;&nbsp;{{item.description+item.description+item.description+item.description}}
+            &nbsp;&nbsp;&nbsp;&nbsp;{{item.description}}
           </div>
         </el-card>
         <el-card :body-style="{ height: '100%' }">
-          <!-- <router-link to="/create" >
-          </router-link> -->
           <div id="addRoom" @click="addRoomHandle">
             <el-icon><Plus/></el-icon>
           </div>
@@ -31,22 +29,34 @@
       </div>
       <el-pagination background layout="prev, pager, next" :total="total" v-model:current-page="current"/>
     </div>
-    <winUI :resizeAble="false" @close="closeWin" :closeShow="winShow" width="30vh" height="30vh">
+    <!-- <winUI :resizeAble="false" @close="closeWin" :closeShow="winShow" width="30vh" height="35vh" minHeight="35vh">
         <template #head>
           <div><b>房间创建</b></div>
         </template>
-      <el-form class="form" v-drag="dragAble">
-        <vueInputVue value="FASLIPOR" @input="inRoomName" hint="房间名称"/>
-        <vueInputVue @input="inDescription" hint="房间简介"/>
-        <el-button :disabled="!lock" @click="createRoomHandle">快捷创建</el-button>
-      </el-form>
-    </winUI>
+        <el-form class="form" v-drag="dragAble">
+          <vueInputVue value="FASLIPOR" @input="inRoomName" hint="房间名称"/>
+          <vueInputVue @input="inDescription" hint="房间简介"/>
+          <el-button :disabled="!lock" @click="createRoomHandle">快捷创建</el-button>
+        </el-form>
+    </winUI> -->
+    <el-dialog v-model="winShow" title="创建房间" width="30%" draggable v-drag>
+      <vueInputVue class="v-input" value="FASLIPOR" @input="inRoomName" hint="房间名称"/>
+      <vueInputVue class="v-input" @input="inDescription" hint="房间简介"/>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="winShow = false">取消</el-button>
+          <el-button type="primary" @click="createRoomHandle">
+            创建
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
   
 </template>
 
 <script setup>
-import { ElPagination,ElMessageBox } from 'element-plus';
+import { ElPagination,ElMessageBox,ElDialog } from 'element-plus';
 import {Search,Plus} from '@element-plus/icons-vue'
 import { onMounted,ref,computed,inject,getCurrentInstance } from 'vue';
 import vueInputVue from '@/components/vue-input.vue';
@@ -89,7 +99,7 @@ const handleSendMessage = (evt) => {
     .then(v=>{
       console.log(evt)
       // router.push({name:"panel"});
-      lock.value = false;
+      lockHandle();
       socket.emit("query",{
         event:"select",
         params:{
@@ -104,15 +114,21 @@ const addRoomHandle = ()=>{
   winShow.value = true;
 }
 
+var lockHandle = ()=>{
+  lock.value = false;
+  setTimeout(() => {
+    lock.value = true;
+  }, 3000);
+}
+
 const createRoomHandle = ()=>{
-  console.log(roomName)
   if(roomName!=""){
     ElMessageBox.confirm(`确定创建【${roomName}】?`,"", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
       })
     .then(v=>{
-      lock.value = false;
+      lockHandle();
       socket.emit("query",{
         event:"add",
         params:{
@@ -145,6 +161,10 @@ const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
 //   });
 // }
 
+function check(str,max=5){
+    return str.length>max?`${str.substr(0,max)}...`:str;
+}
+
 let rooms = computed(()=>{
   let key = search.value;
   let reg = RegExp(key,'i');
@@ -154,7 +174,12 @@ let rooms = computed(()=>{
   const len = window.innerWidth<=960?3:7;
   let i = (current.value - 1)*len;
   total.value = Math.floor((result.length/len)*10);
-  return result.slice(i,i+len);
+  return result.slice(i,i+len).map(v=>{
+        let obj = Object.assign({},v);
+        obj.name = check(obj.name);
+        obj.description = check(obj.description,100);
+        return obj;
+    });
 });
 
 onMounted(() => {
@@ -186,8 +211,44 @@ onMounted(() => {
 //   ]
 // }
 
-
 </script>
+
+<style>
+
+.el-dialog{
+  --el-dialog-bg-color:rgba(255,255,255,0) !important;
+  background:rgba(255,255,255,0) !important;
+  --el-dialog-width: 300px !important;
+}
+
+.el-dialog__close{
+  color: rgb(35, 3, 3) !important;
+}
+.el-dialog__close:hover,.el-dialog__close:active{
+  transform: scale(1.1,1.1);
+  color: rgb(172, 26, 26) !important;
+}
+
+.el-dialog__header {
+  background-color: rgba(130, 137, 142, 0.954) !important;
+  margin-right: 0 !important;
+}
+
+/* 弹出层设置背景色 底部*/
+
+.el-dialog__footer {
+  backdrop-filter: blur(5px);
+  background-color: rgba(233, 237, 240, 0.8) !important;
+}
+ /* 弹出层设置背景色 身体部份*/
+.el-dialog__body{
+  backdrop-filter: blur(5px);
+  background-color: rgba(233, 237, 240, 0.8);
+  /* background:linear-gradient(to bottom,#1468A4,#5ABEF2 );
+  background-size: 100% ,100%; */
+}
+
+</style>
 
 <style scoped>
 #box{
@@ -207,6 +268,10 @@ onMounted(() => {
   margin: 100px;
   padding: 20px;
   overflow: hidden;
+}
+
+.el-card{
+  page-break-inside:avoid;
   -webkit-column-break-inside: avoid;
 }
 
@@ -221,6 +286,10 @@ onMounted(() => {
   box-shadow: rgb(204, 204, 204) 0px 0px 8px;
   /* page-break-inside:avoid; */
   column-gap: 20px;
+}
+
+.v-input{
+  margin-bottom: 20px;
 }
 
 /*手机 */
@@ -336,7 +405,8 @@ onMounted(() => {
 
 .form{
     width: 100%;
-    height: 100%;
+    /* height: 100%; */
+    min-height: 35vh;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;

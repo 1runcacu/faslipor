@@ -23,7 +23,7 @@
             <el-collapse v-model="activeNames" @change="handleChange">
             <el-collapse-item title="工程" name="0">
                 <div class="icons">
-                    <img v-for="item in toolsConfig.project" :src="item.src"/>
+                    <img v-for="item in toolsConfig.project" :src="item.src" v-click2="()=>makeAct(item)"/>
                 </div>
             </el-collapse-item>
             <el-collapse-item title="图层" name="1">
@@ -190,14 +190,6 @@ const toolsConfig = ref({
     more:[]
 });
 
-const list = ref([{
-    src:require("../assets/icon/plus.png"),
-    label:"添加"
-},{
-    src:require("../assets/icon/delete.png"),
-    label:"删除"
-}]);
-
 const activeNames = ref(['2'])
 const handleChange = (val) => {
 //   console.log(val)
@@ -329,6 +321,33 @@ const makeShape = item=>{
     }
 }
 
+const makeAct = item=>{
+    const {label} = item;
+    const {room:{rid},user:{uid}} = config.value;
+    let event = "error";
+    switch(label){
+        case "保存":
+            event="save";
+            break;
+        case "导出":
+            event="export";
+            break;
+        case "导入":
+            event="import";
+            break;
+        case "撤销":
+            event="undo";
+            break;
+        case "重做":
+            event="redo"
+            break;
+    }
+    socket.emit("stream",{
+        event,
+        rid,uid
+    });
+}
+
 let editing = false;
 
 function addPixel(...args){
@@ -390,6 +409,7 @@ const stream = data=>{
                 break;
             case "refresh":
                 canvas.clear();
+                console.log(frame);
                 addPixel(...Object.values(frame));
                 break;
         }
@@ -501,6 +521,10 @@ onMounted(() => {
     init();
     socket.on("stream",stream);
     refresh();
+    history.pushState(null, null, document.URL);
+    window.addEventListener('popstate', function () {
+        history.pushState(null, null, document.URL);
+    });
 });
 
 onBeforeUnmount(()=>{

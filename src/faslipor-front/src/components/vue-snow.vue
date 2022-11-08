@@ -1,5 +1,5 @@
 <template>
-    <div v-for="i in 200" class="snow" :key="i"></div>
+    <div><div v-for="i in 50" class="snow" :key="i"></div></div>
 </template>
 <style>
 .snow {

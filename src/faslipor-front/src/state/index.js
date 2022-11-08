@@ -10,8 +10,8 @@ const store = {
         params:{},
         rooms:[],
         window:{
-            innerHeight:window.innerHeight+"px",
-            innerWidth:window.innerWidth+"px"
+            innerHeight:window.innerHeight,
+            innerWidth:window.innerWidth
         }
     },
     mutations: {
@@ -21,10 +21,10 @@ const store = {
         setRooms(state,rooms=[]){
             state.rooms = rooms;
         },
-        setWindow(state){
-            const {innerHeight,innerWidth} = window;
-            state.window.innerHeight = innerHeight + "px";
-            state.window.innerWidth = innerWidth + "px";
+        setWindow(state,data=window){
+            const {innerHeight,innerWidth} = data;
+            state.window.innerHeight = innerHeight;
+            state.window.innerWidth = innerWidth;
         }
     },
     actions: {

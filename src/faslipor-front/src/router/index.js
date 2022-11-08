@@ -2,6 +2,7 @@ import { createWebHistory, createRouter } from "vue-router";
 
 import index from '@/pages/app-index.vue';
 import panel from '@/pages/app-panel.vue';
+import mobile from '@/pages/app-mobile.vue';
 
 const routes = [
   {
@@ -20,10 +21,32 @@ const routes = [
   }
 ];
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes,
-});
+const routesMobile = [
+  {
+    name:"index",
+    path: "/",
+    component:mobile
+  },
+  {
+    name:"panel",
+    path: "/panel",
+    component:panel
+  },
+  {
+    path:"/:pathMatch(.*)*",
+    redirect: '/'
+  }
+];
+
+let rt = [];
+
+if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+  rt = routesMobile;
+} else if (/(Android)/i.test(navigator.userAgent)) {
+  rt = routesMobile;
+} else {
+  rt = routes;
+}
 
 export function getTerminalType(){
   if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
@@ -34,6 +57,13 @@ export function getTerminalType(){
       return 'pc';
   }
 }
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes:rt,
+});
+
+
 
 
 router.beforeEach((to,from,next)=>{
