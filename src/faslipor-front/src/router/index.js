@@ -27,7 +27,7 @@ const router = createRouter({
 
 export function getTerminalType(){
   if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-      return  'pc';
+      return  'phone';
   } else if (/(Android)/i.test(navigator.userAgent)) {
       return  'mobile';
   } else {

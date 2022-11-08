@@ -19,6 +19,8 @@ const users = {};
 
 const rooms = {};
 const roomsUsers = {};
+const roomBuffer = {};
+const actionBuffer = {};
 
 const sockets = {};
 
@@ -68,8 +70,9 @@ function createRoom(socket,params){
     user
   };
   rooms[rid] = room;
+  roomBuffer[rid] = {};
   users[uid] = user;
-  goto(socket,`/panel?rid=${rid}&uid=${uid}`,data);
+  goto(socket,`/panel`,data);
 }
 
 function enterRoom(socket,params){
@@ -89,7 +92,7 @@ function enterRoom(socket,params){
     room,
     user
   };
-  goto(socket,`/panel?rid=${rid}&uid=${uid}`,data);
+  goto(socket,`/panel`,data);
 }
 
 function exitRoom(socket,params){
@@ -102,6 +105,7 @@ function exitRoom(socket,params){
   if(roomsUsers[rid].length===0){
     delete rooms[rid];
     delete roomsUsers[rid];
+    delete roomBuffer[rid];
   }
   goto(socket,"/",{});
 }
@@ -113,9 +117,9 @@ function exitUser(socket){
     if(has){
       rid = key;
       uid = has.uid;
+      exitRoom(socket,{uid,rid});
       break;
     }
-    exitRoom(socket,{uid,rid});
   }
 }
 
@@ -130,6 +134,20 @@ function broadCastRoomUsers(rid,data){
   roomsUsers[rid].forEach(user=>{
     user.socket.emit("stream",data)
   })
+}
+
+function record(rid,uid,frame){
+  if(!roomBuffer[rid])roomBuffer[rid]={};
+  const buf = roomBuffer[rid];
+
+  const {pixel:{gid,date}} = frame;
+  if(buf[gid]){
+    if(buf[gid].date<date){
+      buf[gid] = frame.pixel;
+    }
+  }else{
+    buf[gid] = frame.pixel;
+  }
 }
 
 io.on('connection',(socket) => {
@@ -151,21 +169,20 @@ io.on('connection',(socket) => {
     });
     socket.on('stream',data=>{
       try{
-        const {event,rid,uid,frame} = data;
+        const {event,rid,uid,lid,frame} = data;
         switch(event){
           case "increment"://broadCastRoomUsers(rid,data);break;
           case "all":broadCastRoomUsers(rid,data);break;
+          case "edit":record(rid,uid,frame);broadCastRoomUsers(rid,roomBuffer[rid][frame.pixel.gid]);break;
+          case "refresh":broadCastRoomUsers(rid,{
+            event,rid,uid,lid,frame:roomBuffer[rid]
+          });break;
         }
       }catch(err){}
     });
     socket.on('message',(data) => {
-        console.log(`收到客户端的消息：${data}`);
-        try{
-          socket.emit('message', {
-            msg: `你好${data}`,
-            code: 200
-          });  
-        }catch(err){}
+        console.log(data);
+        message(socket,data);
     });
     socket.on("reconnect",()=>{
       console.log(`${id}重新连接`);

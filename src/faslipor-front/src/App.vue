@@ -1,15 +1,18 @@
 <template>
-  <VueSnow/>
-  <router-view />
-  <vueBookVue/>
+  <div id="app">
+    <VueSnow/>
+    <router-view />
+    <vueBookVue/>
+  </div>
 </template>
 
 <script setup>
 import VueSnow from '@/components/vue-snow.vue';
 import vueBookVue from '@/components/vue-book.vue';
-import { inject,getCurrentInstance } from "vue";
+import { inject,computed,getCurrentInstance,onMounted } from "vue";
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex';
+import { throttle } from '@/api/util';
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 const socket = inject("socket");
@@ -34,12 +37,21 @@ socket.on("asset", (res={}) => {
     }
 });
 
-socket.on("disconnect",res=>{
+const disconnect = throttle(()=>{
   ctx.$log({message:"连接断开",type:"error"});
+  router.push({name:"index"});
+},300);
+
+socket.on("disconnect",res=>{
+  disconnect();
 });
 
-socket.on("reconnect",res=>{
+const reconnect = throttle(()=>{
   ctx.$log({message:"重连成功",type:"success"});
+},300);
+
+socket.on("reconnect",res=>{
+  reconnect();
 });
 
 socket.on("redirect", (res={}) => {
@@ -47,6 +59,25 @@ socket.on("redirect", (res={}) => {
     store.commit("setParams",res.params);
     router.push({path:res.path});
 });
+
+const height = computed(()=>store.state.window.innerHeight);
+
+onMounted(()=>{
+  window.addEventListener("resize",()=>{
+    store.commit("setWindow");
+  })
+})
+
+history.pushState(null, null, document.URL);
+window.addEventListener('popstate', function () {
+    history.pushState(null, null, document.URL);
+});
+
+window.onpopstate = function () {
+        /// 当点击浏览器的 后退和前进按钮 时才会被触发， 
+    window.history.pushState('forward', null, '');
+    window.history.forward(1);
+};
 
 </script>
 
@@ -74,8 +105,7 @@ body {
 }
 
 #app {
-  width: 100%;
-  height: 100%;
+  height: v-bind(height);
 }
 
   /* vue渐入渐出样式 */

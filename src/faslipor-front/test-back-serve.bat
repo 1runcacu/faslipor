@@ -1,5 +1,3 @@
 cd ..
-cd ..
-cd test
-cd socket-test
+cd socket-node
 node app.js

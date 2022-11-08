@@ -63,7 +63,7 @@ function getRooms(){
     return Object.values(rooms).map(v=>{
         const {rid,name,description,state,limit,stats} = v;
         return {rid,name,description,state,limit,stats};
-    })
+    });
 }
 
 function createRoom(params){
@@ -133,7 +133,6 @@ io.on('connection',(socket) => {
             case "select":enterRoom(socket,params);broadCastList(DATA.rooms);break;
             case "exit":exitRoom(socket,params);broadCastList(DATA.rooms);break;
         }
-
       }catch(err){}
     });
     socket.on('stream',data=>{
