@@ -207,6 +207,7 @@ onMounted(() => {
   margin: 100px;
   padding: 20px;
   overflow: hidden;
+  -webkit-column-break-inside: avoid;
 }
 
 #rooms{
@@ -218,7 +219,6 @@ onMounted(() => {
   backdrop-filter: blur(5px);
   background-color: rgba(255, 255, 255, 0.1);
   box-shadow: rgb(204, 204, 204) 0px 0px 8px;
-  -webkit-column-break-inside: avoid;
   /* page-break-inside:avoid; */
   column-gap: 20px;
 }
@@ -230,6 +230,9 @@ onMounted(() => {
   }
   #rooms{
     column-count: 2;
+    -webkit-olumn-count: 2;
+    -o-column-count: 2;
+    -moz-column-count: 2;
   }
 }
 /*平板*/

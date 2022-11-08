@@ -86,6 +86,7 @@ import vueConsoleVue from '@/components/vue-console.vue';
 import vueOpener from '@/components/vue-opener.vue'
 import { useStore } from 'vuex';
 import {throttle,shakeProof} from "@/api/util";
+import { padEnd } from 'lodash';
 
 const graphMap = {};
 
@@ -227,6 +228,15 @@ function sendCanvas(){
     });
 }
 
+const modified = shakeProof((frame)=>{
+    const {room:{rid},user:{uid}} = config.value;
+    socket.emit("stream",{
+        event:"edit",
+        rid,uid,
+        frame
+    });
+},2);
+
 const makeShape = item=>{
     const {label} = item;
     const [left,top] = [window.innerWidth/2,window.innerHeight/3];
@@ -293,9 +303,6 @@ const makeShape = item=>{
     const graph = new fabric[create.type](...create.params);
     if(graph){
         const frame = create;
-        // graph.on('selected', function() {
-        //     sendCanvas();
-        // });
         // after:render：画布重绘后
         // object:selected：对象被选中
         // object:moving：对象移动
@@ -303,18 +310,26 @@ const makeShape = item=>{
         // object:added：对象被加入
         // object:removed：对象被移除
         try{
-            const {room:{rid},user:{uid}} = config.value;
-            socket.emit("stream",{
-                event:"increment",
-                rid,uid,
-                frame
+            // const {room:{rid},user:{uid}} = config.value;
+            // socket.emit("stream",{
+            //     event:"increment",
+            //     rid,uid,
+            //     frame
+            // });
+            const pixel = graph.toJSON(["gid","date"])
+            modified({
+                type:"创建",
+                pixel
             });
+            addPixel(pixel);
         }catch(err){
 
         }
-        canvas.add(graph);
+        // canvas.add(graph);
     }
 }
+
+let editing = false;
 
 function addPixel(...args){
     fabric.util.enlivenObjects(args, function(objects) {
@@ -322,6 +337,16 @@ function addPixel(...args){
         canvas.renderOnAddRemove = false;
         objects.forEach(function(o) {
             canvas.add(o);
+            const editcall = option=>{
+                o.date = Date.now();
+                modified({
+                    type:"编辑",
+                    pixel:o.toJSON(["gid","date"])
+                });
+            };
+            o.on("moving",editcall);
+            o.on("scaling",editcall);
+            o.on("rotating",editcall);
         });
         canvas.renderOnAddRemove = origRenderOnAddRemove;
         canvas.renderAll();
@@ -364,6 +389,7 @@ const stream = data=>{
                 }
                 break;
             case "refresh":
+                canvas.clear();
                 addPixel(...Object.values(frame));
                 break;
         }
@@ -377,20 +403,28 @@ const send = shakeProof(()=>sendCanvas(),30);
 function init() {
     canvas = new fabric.Canvas('canvas') // 实例化fabric，并绑定到canvas元素上
     let panning = false;
+    
+    canvas.selection = false;
+
     canvas.on('mouse:down', function(options) {
         // console.log("鼠标按下了：", options.e.clientX, options.e.clientY);
         // shakeProof(()=>sendCanvas(),100);
         // send();
         if(options.e.ctrlKey) {
           panning = true;
-          canvas.selection = false;
+        //   canvas.selection = false;
         }
+        // console.log(editing,panning);
+        // if(!editing){
+        //     panning = true;
+        // }
     });
     // 鼠标抬起时
     canvas.on('mouse:up', function(options) {
         // send();
         panning = false;
-        canvas.selection = true;
+        editing = false;
+        // canvas.selection = true;
         // console.log("鼠标抬起了：", options.e.clientX, options.e.clientY);
     });
     // 鼠标移动时
@@ -412,30 +446,23 @@ function init() {
         canvas.zoomToPoint(zoomPoint, zoom);
     });
 
-    const modified = shakeProof((frame)=>{
-        const {room:{rid},user:{uid}} = config.value;
-        socket.emit("stream",{
-            event:"edit",
-            rid,uid,
-            frame
-        });
-    },30);
-
     canvas.on("object:modified",function(option){
-        option.target.date = Date.now();
-        modified({
-            type:"编辑",
-            pixel:option.target.toJSON(["gid","date"])
-        });
+        // option.target.date = Date.now();
+        // if(option.target._objects){
+        //     option.target._objects.forEach(obj=>{
+        //         modified({
+        //             type:"编辑",
+        //             pixel:obj.toJSON(["gid","date"])
+        //         });
+        //     });
+        // }else{
+        //     modified({
+        //         type:"编辑",
+        //         pixel:option.target.toJSON(["gid","date"])
+        //     });
+        // }
     });
 
-    // document.querySelector(".upper-canvas").mousewheel(function(event) {
-    //     const zoom = (event.deltaY > 0 ? 0.1 : -0.1) + canvas.getZoom();
-    //     zoom = Math.max(0.1,zoom); //最小为原来的1/10
-    //     zoom = Math.min(3,zoom); //最大是原来的3倍
-    //     const zoomPoint = new fabric.Point(event.offsetX, event.offsetY);
-    //     canvas.zoomToPoint(zoomPoint, zoom);
-    // });
     // 线性渐变
     // let gradient = new fabric.Gradient({
     //   type: 'linear', // linear or radial
@@ -458,7 +485,7 @@ function init() {
         return function(){
             canvas.setWidth(window.innerWidth);
             canvas.setHeight(window.innerHeight);
-        }
+        };
     })(canvas);
 }
 

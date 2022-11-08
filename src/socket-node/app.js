@@ -20,6 +20,7 @@ const users = {};
 const rooms = {};
 const roomsUsers = {};
 const roomBuffer = {};
+const actionBuffer = {};
 
 const sockets = {};
 
@@ -138,6 +139,7 @@ function broadCastRoomUsers(rid,data){
 function record(rid,uid,frame){
   if(!roomBuffer[rid])roomBuffer[rid]={};
   const buf = roomBuffer[rid];
+
   const {pixel:{gid,date}} = frame;
   if(buf[gid]){
     if(buf[gid].date<date){
@@ -171,9 +173,9 @@ io.on('connection',(socket) => {
         switch(event){
           case "increment"://broadCastRoomUsers(rid,data);break;
           case "all":broadCastRoomUsers(rid,data);break;
-          case "edit":record(rid,uid,frame);broadCastRoomUsers(rid,data);break;
+          case "edit":record(rid,uid,frame);broadCastRoomUsers(rid,roomBuffer[rid][frame.pixel.gid]);break;
           case "refresh":broadCastRoomUsers(rid,{
-            event,rid,uid,frame:roomBuffer[rid]
+            event,rid,uid,lid,frame:roomBuffer[rid]
           });break;
         }
       }catch(err){}

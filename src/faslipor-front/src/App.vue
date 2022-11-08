@@ -60,10 +60,12 @@ socket.on("redirect", (res={}) => {
     router.push({path:res.path});
 });
 
-const height = computed(()=>window.innerHeight+"px");
+const height = computed(()=>store.state.window.innerHeight);
 
 onMounted(()=>{
-  height;
+  window.addEventListener("resize",()=>{
+    store.commit("setWindow");
+  })
 })
 
 history.pushState(null, null, document.URL);
