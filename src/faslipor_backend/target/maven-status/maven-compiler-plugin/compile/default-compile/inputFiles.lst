@@ -3,6 +3,7 @@
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/controller/DemoController.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/config/WebMvcConfig.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/server/MessageEventHandler.java
+/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Pixel.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/NettySocketioApplication.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/redis/RedisService.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/controller/LoginController.java
