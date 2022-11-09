@@ -18,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import sun.misc.Queue;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -92,9 +95,43 @@ public class MessageEventHandler {
 
 //event,rid,uid,lid,frame:roomBuffer[rid]
     @OnEvent(value="stream")
-    public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException {
+    public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException, IOException {
        log.info("stream");
        log.info(JSON.toJSONString(data0));
+       if(data0.get("event").equals("save")){
+           log.info("save");
+           String uid = socketIOClientMap1.get(client);
+           House myRoom = redisService.get(uid + "Room", House.class);
+           if(!nowAllMap.containsKey(myRoom.rid)) return;
+           //部署时注意这里需要改
+           Message message=new Message();
+           message.type="info";
+           String filePath="/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/resources/Room";
+           File dir=new File(filePath);
+           if(!dir.exists()){
+               dir.mkdirs();
+           }
+           File checkFile=new File(filePath+"/"+uid+".fsl");
+           FileWriter writer=null;
+           try{
+               if(!checkFile.exists()){
+                   checkFile.createNewFile();
+               }
+               writer=new FileWriter(checkFile,false);
+               writer.append(JSON.toJSONString(nowAllMap.get(myRoom.rid)));
+               writer.flush();
+           } catch (IOException e) {
+               e.printStackTrace();
+           }finally {
+               if(null!=writer)
+                   writer.close();
+           }
+           message.message="Room"+"/"+uid+".fsl";
+           log.info(JSON.toJSONString(message));
+           /*/localhost:8101/Room/360689.fsl
+           * */
+           client.sendEvent("message",message);
+       }
        if(data0.get("event").equals("refresh")) {
            log.info("refresh");
            String uid = socketIOClientMap1.get(client);
@@ -111,27 +148,6 @@ public class MessageEventHandler {
        }
        if(data0.get("event").equals("all")) {
           log.info("all");
-           //String data=JSON.toJSONString(data0);
-          //Stream data=JSON.parseObject(JSON.toJSONString(data0),Stream.class);
-         /* myQueueAll.add(data0);
-          log.info(String.valueOf(myQueueAll.size()));
-           while(!flaga){
-               Thread.sleep(10);
-           }
-           log.info("开始");
-           flag=false;
-           List<JSONObject> nameList=redisService.get(data0.get("rid")+"nameList",List.class);
-           List<JSONObject> nameList0 = new ArrayList(nameList);
-           JSONObject myData=myQueueAll.poll();
-           for(JSONObject cur:nameList0){ //uid
-               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
-               if(!u.uid.equals(data0.get("uid"))){
-                   log.info(u.uid);
-                   log.info(JSON.toJSONString(myData));
-                   socketIOClientMap.get(u.uid).sendEvent("stream",myData);
-               }
-           }
-           flag=true;*/
        }
        if(data0.get("event").equals("increment")){
          //  Long dataNext=Long.valueOf(JSON.parseObject(data0.get("frame").toString()).get("params").toString()     toString());
@@ -176,14 +192,13 @@ public class MessageEventHandler {
            List<JSONObject> nameList0 = new ArrayList(nameList);
            Istream myData=new Istream();
            myData=myQueue.removeLast();
-
-           //更新当前图层
-           //JSONString all=nowAllMap.get(myData.rid);
+           //all是该房间的全量帧 由一个个gid对应的pixel组成
            Map<String,JSONObject> all=JSON.toJavaObject(nowAllMap.get(myData.rid),Map.class);
            if(all==null){
                all=new HashMap<>();
            }
            log.info(all.toString());
+           //这里需要缓存之前的gid
            all.put(myData.frame.pixel.get("gid").toString(),myData.frame.pixel);
            log.info("put"+myData.rid);
            nowAllMap.put(myData.rid, (JSONObject) JSONObject.toJSON(all));
