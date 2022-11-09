@@ -49,7 +49,11 @@ public class MessageEventHandler {
 
     public static Map<SocketIOClient,String> socketIOClientMap1=new ConcurrentHashMap<>();
 
-    public static Map<String,JSONObject> nowAllMap=new ConcurrentHashMap<>(); //rid, (gid,pixel)
+    public static Map<String,JSONObject> nowAllMap=new HashMap<>(); //rid, (gid,pixel)
+
+    public static Map<String,Stack<Map<String,JSONObject>>> historyAllMap=new HashMap<>();//rid,(Stack<gid,pixel>)
+
+    public static Map<String,Stack<Map<String,JSONObject>>> redoAllMap=new HashMap<>();
 
     public static  LinkedList<Istream> myQueue=new LinkedList<>();
 
@@ -146,6 +150,44 @@ public class MessageEventHandler {
            log.info(JSONObject.toJSONString(myRe));
            client.sendEvent("stream",myRe);
        }
+       if(data0.get("event").equals("undo")){
+           log.info("undo");
+           String uid = socketIOClientMap1.get(client);
+           House myHouse=redisService.get(uid+"Room",House.class);
+           if(historyAllMap.get(myHouse.rid)==null) return;
+           if(historyAllMap.get(myHouse.rid).size()==0) return;
+           log.info(historyAllMap.get(myHouse.rid).size()+" ");
+           Map<String,JSONObject> elem=historyAllMap.get(myHouse.rid).pop();
+           Stack<Map<String,JSONObject>> myStack=redoAllMap.get(myHouse.rid);
+           if(myStack==null) myStack=new Stack<>();
+           myStack.add(elem);
+           redoAllMap.put(myHouse.rid,myStack);
+           //更新当前帧
+           //让它去调用refresh
+           Refresh  myRefresh=new Refresh();
+           myRefresh.uid=uid;
+           myRefresh.rid=myHouse.rid;
+           log.info(historyAllMap.get(myHouse.rid).toString());
+           if(historyAllMap.get(myHouse.rid).size()==0) //
+           {
+               myRefresh.frame=null;
+              // log.info(myRefresh.frame.toJSONString());
+              // log.info(JSONObject.toJSONString(myRefresh));
+               nowAllMap.put(myHouse.rid,null);
+           }else{
+               nowAllMap.put(myHouse.rid,(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek()));
+               myRefresh.frame=(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek());
+           }
+           List<JSONObject> nameList=redisService.get(myHouse.rid+"nameList",List.class);
+           List<JSONObject> nameList0 = new ArrayList(nameList);
+           for(JSONObject cur:nameList0){ //uid
+               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+                   log.info(u.uid);
+                   myRefresh.uid=u.uid;
+                   socketIOClientMap.get(u.uid).sendEvent("stream",myRefresh);
+           }
+
+       }
        if(data0.get("event").equals("all")) {
           log.info("all");
        }
@@ -193,13 +235,27 @@ public class MessageEventHandler {
            Istream myData=new Istream();
            myData=myQueue.removeLast();
            //all是该房间的全量帧 由一个个gid对应的pixel组成
+           //rid,(Stack<gid,pixel>)
            Map<String,JSONObject> all=JSON.toJavaObject(nowAllMap.get(myData.rid),Map.class);
-           if(all==null){
-               all=new HashMap<>();
-           }
+           if(all==null) all=new HashMap<>();
            log.info(all.toString());
            //这里需要缓存之前的gid
+           boolean f=true;
+           if(all.get(myData.frame.pixel.get("gid").toString())!=null&&!myData.syn){
+               f=false;
+           }
            all.put(myData.frame.pixel.get("gid").toString(),myData.frame.pixel);
+           Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myData.rid);
+
+           log.info(JSONObject.toJSONString(myStack));
+           if(myStack==null)//该房间还未有历史记录
+               myStack=new Stack<>();
+           if(f) {
+               myStack.add(all);
+               historyAllMap.put(myData.rid, myStack);
+               log.info("加入后的历史记录大小"+String.valueOf(historyAllMap.get(myData.rid).size()));
+               log.info(JSONObject.toJSONString(historyAllMap.get(myData.rid)));
+           }
            log.info("put"+myData.rid);
            nowAllMap.put(myData.rid, (JSONObject) JSONObject.toJSON(all));
            pre=Long.valueOf(myData.frame.pixel.get("date").toString());
