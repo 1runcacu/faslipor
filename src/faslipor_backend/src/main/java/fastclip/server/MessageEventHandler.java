@@ -18,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import sun.misc.Queue;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -46,7 +49,11 @@ public class MessageEventHandler {
 
     public static Map<SocketIOClient,String> socketIOClientMap1=new ConcurrentHashMap<>();
 
-    public static Map<String,JSONObject> nowAllMap=new ConcurrentHashMap<>(); //rid, (gid,pixel)
+    public static Map<String,JSONObject> nowAllMap=new HashMap<>(); //rid, (gid,pixel)
+
+    public static Map<String,Stack<Map<String,JSONObject>>> historyAllMap=new HashMap<>();//rid,(Stack<gid,pixel>)
+
+    public static Map<String,Stack<Map<String,JSONObject>>> redoAllMap=new HashMap<>();
 
     public static  LinkedList<Istream> myQueue=new LinkedList<>();
 
@@ -92,9 +99,43 @@ public class MessageEventHandler {
 
 //event,rid,uid,lid,frame:roomBuffer[rid]
     @OnEvent(value="stream")
-    public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException {
+    public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException, IOException {
        log.info("stream");
        log.info(JSON.toJSONString(data0));
+       if(data0.get("event").equals("save")){
+           log.info("save");
+           String uid = socketIOClientMap1.get(client);
+           House myRoom = redisService.get(uid + "Room", House.class);
+           if(!nowAllMap.containsKey(myRoom.rid)) return;
+           //部署时注意这里需要改
+           Message message=new Message();
+           message.type="info";
+           String filePath="/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/resources/Room";
+           File dir=new File(filePath);
+           if(!dir.exists()){
+               dir.mkdirs();
+           }
+           File checkFile=new File(filePath+"/"+uid+".fsl");
+           FileWriter writer=null;
+           try{
+               if(!checkFile.exists()){
+                   checkFile.createNewFile();
+               }
+               writer=new FileWriter(checkFile,false);
+               writer.append(JSON.toJSONString(nowAllMap.get(myRoom.rid)));
+               writer.flush();
+           } catch (IOException e) {
+               e.printStackTrace();
+           }finally {
+               if(null!=writer)
+                   writer.close();
+           }
+           message.message="Room"+"/"+uid+".fsl";
+           log.info(JSON.toJSONString(message));
+           /*/localhost:8101/Room/360689.fsl
+           * */
+           client.sendEvent("message",message);
+       }
        if(data0.get("event").equals("refresh")) {
            log.info("refresh");
            String uid = socketIOClientMap1.get(client);
@@ -109,29 +150,46 @@ public class MessageEventHandler {
            log.info(JSONObject.toJSONString(myRe));
            client.sendEvent("stream",myRe);
        }
-       if(data0.get("event").equals("all")) {
-          log.info("all");
-           //String data=JSON.toJSONString(data0);
-          //Stream data=JSON.parseObject(JSON.toJSONString(data0),Stream.class);
-         /* myQueueAll.add(data0);
-          log.info(String.valueOf(myQueueAll.size()));
-           while(!flaga){
-               Thread.sleep(10);
+       if(data0.get("event").equals("undo")){
+           log.info("undo");
+           String uid = socketIOClientMap1.get(client);
+           House myHouse=redisService.get(uid+"Room",House.class);
+           if(historyAllMap.get(myHouse.rid)==null) return;
+           if(historyAllMap.get(myHouse.rid).size()==0) return;
+           log.info(historyAllMap.get(myHouse.rid).size()+" ");
+           Map<String,JSONObject> elem=historyAllMap.get(myHouse.rid).pop();
+           Stack<Map<String,JSONObject>> myStack=redoAllMap.get(myHouse.rid);
+           if(myStack==null) myStack=new Stack<>();
+           myStack.add(elem);
+           redoAllMap.put(myHouse.rid,myStack);
+           //更新当前帧
+           //让它去调用refresh
+           Refresh  myRefresh=new Refresh();
+           myRefresh.uid=uid;
+           myRefresh.rid=myHouse.rid;
+           log.info(historyAllMap.get(myHouse.rid).toString());
+           if(historyAllMap.get(myHouse.rid).size()==0) //
+           {
+               myRefresh.frame=null;
+              // log.info(myRefresh.frame.toJSONString());
+              // log.info(JSONObject.toJSONString(myRefresh));
+               nowAllMap.put(myHouse.rid,null);
+           }else{
+               nowAllMap.put(myHouse.rid,(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek()));
+               myRefresh.frame=(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek());
            }
-           log.info("开始");
-           flag=false;
-           List<JSONObject> nameList=redisService.get(data0.get("rid")+"nameList",List.class);
+           List<JSONObject> nameList=redisService.get(myHouse.rid+"nameList",List.class);
            List<JSONObject> nameList0 = new ArrayList(nameList);
-           JSONObject myData=myQueueAll.poll();
            for(JSONObject cur:nameList0){ //uid
                NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
-               if(!u.uid.equals(data0.get("uid"))){
                    log.info(u.uid);
-                   log.info(JSON.toJSONString(myData));
-                   socketIOClientMap.get(u.uid).sendEvent("stream",myData);
-               }
+                   myRefresh.uid=u.uid;
+                   socketIOClientMap.get(u.uid).sendEvent("stream",myRefresh);
            }
-           flag=true;*/
+
+       }
+       if(data0.get("event").equals("all")) {
+          log.info("all");
        }
        if(data0.get("event").equals("increment")){
          //  Long dataNext=Long.valueOf(JSON.parseObject(data0.get("frame").toString()).get("params").toString()     toString());
@@ -176,15 +234,28 @@ public class MessageEventHandler {
            List<JSONObject> nameList0 = new ArrayList(nameList);
            Istream myData=new Istream();
            myData=myQueue.removeLast();
-
-           //更新当前图层
-           //JSONString all=nowAllMap.get(myData.rid);
+           //all是该房间的全量帧 由一个个gid对应的pixel组成
+           //rid,(Stack<gid,pixel>)
            Map<String,JSONObject> all=JSON.toJavaObject(nowAllMap.get(myData.rid),Map.class);
-           if(all==null){
-               all=new HashMap<>();
-           }
+           if(all==null) all=new HashMap<>();
            log.info(all.toString());
+           //这里需要缓存之前的gid
+           boolean f=true;
+           if(all.get(myData.frame.pixel.get("gid").toString())!=null&&!myData.syn){
+               f=false;
+           }
            all.put(myData.frame.pixel.get("gid").toString(),myData.frame.pixel);
+           Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myData.rid);
+
+           log.info(JSONObject.toJSONString(myStack));
+           if(myStack==null)//该房间还未有历史记录
+               myStack=new Stack<>();
+           if(f) {
+               myStack.add(all);
+               historyAllMap.put(myData.rid, myStack);
+               log.info("加入后的历史记录大小"+String.valueOf(historyAllMap.get(myData.rid).size()));
+               log.info(JSONObject.toJSONString(historyAllMap.get(myData.rid)));
+           }
            log.info("put"+myData.rid);
            nowAllMap.put(myData.rid, (JSONObject) JSONObject.toJSON(all));
            pre=Long.valueOf(myData.frame.pixel.get("date").toString());

@@ -9,4 +9,5 @@ public class Istream {
     public String rid;
     public Frame frame;
     public String lid;
+    public boolean syn;
 }
