@@ -1,6 +1,6 @@
 <template>
-    <winUiVue :resizeAble="true" @close="closeWin" width="50vh" height="40vh" v-show="show"
-        minWidth="400px" minHeight="280px"
+    <winUiVue :resizeAble="true" @close="closeWin" :width="WH" height="40vh" v-show="show"
+        minWidth="200px" minHeight="280px"
     >
         <template #head>
           <div><b>{{title}}</b></div>
@@ -16,25 +16,25 @@
                     @close="handleClose"
                 >
                     <el-menu-item index="1">
-                        <el-icon><location /></el-icon>
-                        <template #title>Navigator Two</template>
+                        <el-icon><ChatDotRound /></el-icon>
+                        <template #title>消息日志</template>
                     </el-menu-item>
                     <el-menu-item index="2">
-                        <el-icon><icon-menu /></el-icon>
-                        <template #title>Navigator Two</template>
+                        <el-icon><Monitor /></el-icon>
+                        <template #title>控制键盘</template>
                     </el-menu-item>
-                    <el-menu-item index="3" disabled>
-                        <el-icon><document /></el-icon>
-                        <template #title>Navigator Three</template>
+                    <el-menu-item index="3">
+                        <el-icon><ElementPlus /></el-icon>
+                        <template #title>高级管理</template>
                     </el-menu-item>
                     <el-menu-item index="4">
                         <el-icon><setting /></el-icon>
-                        <template #title>Navigator Four</template>
+                        <template #title>房间设置</template>
                     </el-menu-item>
                 </el-menu>
             </el-scrollbar>
             <el-scrollbar class=right>
-
+                <div v-for="i in 100">{{i}}</div>
             </el-scrollbar>
         </div>
     </winUiVue>
@@ -42,16 +42,25 @@
 
 <script setup>
 import { ElMenu,ElMenuItem} from 'element-plus';
-import { ref,defineProps,defineEmits } from 'vue';
+import { ref,defineProps,defineEmits, inject, onMounted, onUnmounted,computed } from 'vue';
 import winUiVue from './win-ui.vue';
 import {
-  Document,
-  Menu as IconMenu,
-  Location,
-  Setting,
-  CaretRight,
-  CaretLeft
+    ElementPlus,
+    Monitor,
+    ChatDotRound,
+    Setting
 } from '@element-plus/icons-vue'
+
+const socket = inject("socket");
+
+const message = data=>{
+    const {rid,uid,event,frame} = data;
+    try{
+        switch(event){
+            case "":
+        }
+    }catch(err){}
+}
 
 const emit = defineEmits(["open","test"]);
 
@@ -77,6 +86,15 @@ const closeWin = ()=>{
     emit("close");
 }
 
+onMounted(()=>{
+    socket.on("stream",message);
+});
+
+onUnmounted(()=>{
+    socket.off("stream",message);
+});
+
+const WH = computed(()=>(window.innerWidth>500?500:window.innerWidth)+"px");
 
 </script>
 

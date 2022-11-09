@@ -13,6 +13,7 @@ import { inject,computed,getCurrentInstance,onMounted, onUnmounted } from "vue";
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex';
 import { throttle } from '@/api/util';
+import { setAllow } from "@/state";
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 const socket = inject("socket");
@@ -57,6 +58,7 @@ socket.on("reconnect",res=>{
 socket.on("redirect", (res={}) => {
     console.log("redirect:",res);
     store.commit("setParams",res.params);
+    setAllow(true);
     router.push({path:res.path});
 });
 
@@ -91,10 +93,6 @@ onUnmounted(()=>{
   window.removeEventListener(resize);
 })
 
-history.pushState(null, null, document.URL);
-window.addEventListener('popstate', function () {
-    history.pushState(null, null, document.URL);
-});
 
 // window.onpopstate = function () {
 //         /// 当点击浏览器的 后退和前进按钮 时才会被触发， 

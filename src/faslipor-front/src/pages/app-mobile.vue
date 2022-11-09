@@ -112,7 +112,7 @@ const test = ()=>{
           event:"add",
           params:{
             roomName:roomName.value,
-            description:description.value
+            description:description.value||"主人很懒，什么都没有写喔~"
           }
         });
       }).catch(()=>{});
@@ -223,10 +223,31 @@ function check(str,max=5){
   #cards{
     width: calc(100% - 20px);
     flex-direction: column;
-    column-count: 2;
     column-gap: 10px;
     margin: 10px;
   }
+  #cards>*{
+    page-break-inside:avoid;
+    -webkit-column-break-inside: avoid;
+  }
+
+@media screen and (max-width:600px){
+  #cards{
+    column-count: 2;
+  }
+}
+
+@media screen and (min-width:600px) and (max-width:960px){
+  #cards{
+    column-count: 3;
+  }
+}
+
+@media screen and (min-width:960px){
+  #cards{
+    column-count: 4;
+  }
+}
 
   .el-card{
     page-break-inside:avoid;

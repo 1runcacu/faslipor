@@ -1,5 +1,8 @@
 import { createStore } from "vuex";
- 
+
+const PMS = {};
+
+let allow = false;
 
 const store = {
     state: {
@@ -17,6 +20,7 @@ const store = {
     mutations: {
         setParams(state,params={}){
             state.params = params;
+            Object.assign(PMS,params);
         },
         setRooms(state,rooms=[]){
             state.rooms = rooms;
@@ -36,6 +40,16 @@ const store = {
     modules: {
         
     }
+}
+
+export const getParams = ()=>PMS;
+
+export const setAllow = (v=true)=>{
+    allow = v;
+}
+
+export const getAllow = ()=>{
+    return allow;
 }
 
 export default createStore(store)

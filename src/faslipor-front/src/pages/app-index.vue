@@ -133,7 +133,7 @@ const createRoomHandle = ()=>{
         event:"add",
         params:{
           roomName,
-          description
+          description:description||"主人很懒，什么都没有写喔~"
         }
       });
     }).catch(()=>{});

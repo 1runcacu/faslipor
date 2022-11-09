@@ -3,7 +3,7 @@ import App from './App.vue'
 import router from './router';
 import state from './state';
 import axios from 'axios';
-import { ElButton,ElIcon,ElScrollbar,ElCard,ElNotification,ElMessage,ElInput } from 'element-plus';
+import { ElButton,ElIcon,ElScrollbar,ElCard,ElNotification,ElMessage,ElInput,ElMessageBox } from 'element-plus';
 import 'element-plus/dist/index.css'
 import config from './api/config';
 import SocketIO from './api/socket';
@@ -17,14 +17,17 @@ const app = createApp(App);
     app.config.globalProperties.$app_config=config;
     app.config.globalProperties.$log=ElNotification;
     app.config.globalProperties.$message=ElMessage;
+    app.config.globalProperties.$confirm=ElMessageBox.confirm;
+
+    window.confirm = ElMessageBox.confirm;
 
 axios.defaults.headers.common['Content-Type'] = 'application/json;charset=UTF-8';
 
 registerDirectives(app);
 
 app
-    .use(router)
     .use(state)
+    .use(router)
     .use(ElButton)
     .use(ElIcon)
     .use(ElScrollbar)

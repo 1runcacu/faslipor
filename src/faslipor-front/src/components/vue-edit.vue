@@ -4,11 +4,21 @@
         <div class="drag-box" >
             <div id="box" class="ban-select-font" v-drag>
                 <div class="header">
-                    <strong>工具栏</strong>
+                    <!-- <strong>快捷</strong> -->
                     <el-icon class="close" @click="change"><Close/></el-icon>
                 </div>
                 <el-scrollbar class="body">
-                    <slot/>
+                    <div class="edits">
+                        <img src="@/assets/icon/曲线大小.png"/>
+                        <img src="@/assets/icon/字体大小.png"/>
+                        <input type="color"/>
+                        <div class="block"></div>
+                        <img src="@/assets/icon/保存.png"/>
+                        <img src="@/assets/icon/复制.png"/>
+                        <img src="@/assets/icon/撤销.png"/>
+                        <img src="@/assets/icon/重做.png"/>
+                        <img src="@/assets/icon/删除.png"/>
+                    </div>
                 </el-scrollbar>
             </div>
         </div>
@@ -16,12 +26,17 @@
 </template>
 
 <script>
-import { Close} from '@element-plus/icons-vue'
+import {Close} from '@element-plus/icons-vue'
 
 export default{
     data(){
         return {
-            select:false
+            select:false,
+            tools:[
+                {
+                    label:""
+                }
+            ]
         };
     },methods:{
         change(){
@@ -59,16 +74,16 @@ export default{
 
 .drag-box{
     position: fixed;
-    width: 200px;
+    width: 60px;
     height: 600px;
-    left: 0;
+    right: 0;
     top: calc(50% - 300px);
     box-sizing: border-box;
     padding: 8px;
     overflow: hidden;
     color: #000;
     border: 1px solid black;
-    border-radius: 0 30px 0 0;
+    border-radius: 5px;
     backdrop-filter: blur(5px);
     background-color: rgba(233, 237, 240, 0.8);
     box-shadow: rgb(204, 204, 204) 0px 0px 5px;
@@ -81,13 +96,13 @@ export default{
 }
 .drag-opener {
     position: fixed;
-    left: 0;
+    right: 0;
     top: 45%;
     height: 80px;
     width: 15px;
     overflow: hidden;
     border: 0.5px solid black;
-    border-radius:0 50px 50px 0;
+    border-radius:50px 0 0 50px;
     backdrop-filter: blur(5px);
     background-color: rgba(15, 20, 28, 0.84);
     box-shadow: rgba(15, 20, 28, 0.286) 0px 0px 5px;
@@ -104,7 +119,31 @@ export default{
     transform: scale(1.05,1.05);
     color: red;
 }
-.body{
-
+.edits{
+    display: flex;
+    flex-direction: column;
+    padding: 3px;
+    overflow: hidden;
+    justify-content: stretch;
+    align-items: flex-start;
+    height: 500px;
 }
+
+.edits>*{
+    width: 30px;
+    height: 30px;
+    margin-top: 20px;
+    border-radius: 1rem;
+}
+.edits>img{
+    filter: invert(60%);
+}
+img:hover,img:active{
+    filter: invert(0%);
+}
+
+.block{
+    flex: 1;
+}
+
 </style>
