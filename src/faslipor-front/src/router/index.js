@@ -42,8 +42,6 @@ const routesMobile = [
 
 let rt = [];
 
-console.log(navigator.userAgent)
-
 if (/(iPad|iPod)/i.test(navigator.userAgent)) {
   rt = routes;
 } else if (/(iPhone|Android|iOS)/i.test(navigator.userAgent)) {

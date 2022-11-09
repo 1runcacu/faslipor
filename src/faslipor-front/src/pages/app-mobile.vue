@@ -19,12 +19,12 @@
     </transition>
     <el-scrollbar class="rooms">
         <div id="cards">
-            <el-card :body-style="{ height: '200px' }" >
+            <el-card :body-style="{ height: '200px','page-break-inside':'avoid' }">
                 <div id="addRoom" @click.stop="addRoomHandle">
                 <el-icon><Plus/></el-icon>
                 </div>
             </el-card>
-            <el-card :body-style="{ 'min-height': '150px' }" v-for="(item,index) in rooms" :class="{disabled:!item.state||(item.stats>=item.limit)}" :key="index" :disabled="!item.state||(item.stats>=item.limit)">
+            <el-card :body-style="{ 'min-height': '150px','page-break-inside':'avoid' }" v-for="(item,index) in rooms" :class="{disabled:!item.state||(item.stats>=item.limit)}" :key="index" :disabled="!item.state||(item.stats>=item.limit)">
                 <template #header>
                 <div class="card-header">
                     <span><b>{{item.name}}</b><div style="font-size:0.7rem;">[{{item.stats}}/{{item.limit}}]</div></span>
@@ -101,6 +101,18 @@ const test = ()=>{
   }
   
   const createRoomHandle = ()=>{
+    if(roomName.value===""){
+      ctx.$message({
+        message:"房间名称不为空~",
+        type:"error"
+      });return;
+    }
+    if(roomName.value.split('').length>20){
+      ctx.$message({
+        message:"房间名称太长啦~",
+        type:"warning"
+      });return;
+    }
     if(roomName.value!=""){
       ElMessageBox.confirm(`确定创建【${roomName.value}】?`,"", {
           confirmButtonText: "确定",
@@ -116,11 +128,6 @@ const test = ()=>{
           }
         });
       }).catch(()=>{});
-    }else{
-      ctx.$message({
-        message:"房间名称不为空",
-        type:"error"
-      });
     }
   }
   
@@ -229,6 +236,8 @@ function check(str,max=5){
   #cards>*{
     page-break-inside:avoid;
     -webkit-column-break-inside: avoid;
+    -o-column-break-inside: avoid;
+    -moz-column-break-inside: avoid;
   }
 
 @media screen and (max-width:600px){
@@ -307,7 +316,8 @@ function check(str,max=5){
   
   .el-card:hover,.el-card:active{
     box-shadow: gray 0px 0px 10px;
-    transform: scale(1.05,1.05);
+    /* transform: scale(1.01,1.01); */
+    padding: 10px;
     background-color: #132d59;
     transition-duration: 500ms;
     color: white;

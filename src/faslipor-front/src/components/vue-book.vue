@@ -144,7 +144,6 @@ const handleChange = (val) => {
 }
 
 const WH = computed(()=>{
-    console.log(window.innerWidth)
     return (window.innerWidth>500?500:window.innerWidth)+"px"
 });
 

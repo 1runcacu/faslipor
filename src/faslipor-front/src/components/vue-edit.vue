@@ -9,12 +9,36 @@
                 </div>
                 <el-scrollbar class="body">
                     <div class="edits">
-                        <img src="@/assets/icon/曲线大小.png"/>
-                        <img src="@/assets/icon/字体大小.png"/>
-                        <input type="color"/>
+                        <el-popover placement="left" trigger="click" :width="50">
+                            <template #reference>
+                                <img src="@/assets/icon/曲线大小.png"/>
+                            </template>
+                            <input class="edit" type="number" max="10" min="0.1" placeholder="线宽大小"/>
+                        </el-popover>
+                        <el-popover placement="left" trigger="click" :width="50">
+                            <template #reference>
+                                <img src="@/assets/icon/字体大小.png"/>
+                            </template>
+                            <input class="edit" type="number" max="10" min="0.1" placeholder="字体大小"/>
+                        </el-popover>
+                        <input type="color" placeholder="字体颜色"/>
+                        <div class="block"></div>
+                        <el-button type="info" link @click="key(35)">CTL</el-button><br/>
+                        <el-button type="info" link @click="key(27)">ALT</el-button>
                         <div class="block"></div>
                         <img src="@/assets/icon/保存.png"/>
-                        <img src="@/assets/icon/复制.png"/>
+                        <!-- <el-icon><Operation/></el-icon> -->
+                        <!-- <img src="@/assets/icon/复制.png"/> -->
+                        <el-popover placement="left" trigger="click" :width="50">
+                            <template #reference>
+                                <img src="@/assets/icon/功能.png"/>
+                            </template>
+                            <div class="more">
+                                <img src="@/assets/icon/放大.png"/> 
+                                <img src="@/assets/icon/缩小.png"/> 
+                                <img src="@/assets/icon/复制.png"/> 
+                            </div>
+                        </el-popover>
                         <img src="@/assets/icon/撤销.png"/>
                         <img src="@/assets/icon/重做.png"/>
                         <img src="@/assets/icon/删除.png"/>
@@ -27,6 +51,7 @@
 
 <script>
 import {Close} from '@element-plus/icons-vue'
+import { ElPopover } from 'element-plus';
 
 export default{
     data(){
@@ -42,10 +67,15 @@ export default{
         change(){
             this.select = !this.select;
             this.$emit("open",!this.select);
+        },
+        key(k){
+            // KeyEvent(k);
+            this.$emit("KD",k);
         }
     },
     components:{
-        Close
+        Close,
+        ElPopover
     },
     props:{
         toolShow:Boolean
@@ -126,7 +156,7 @@ export default{
     overflow: hidden;
     justify-content: stretch;
     align-items: flex-start;
-    height: 500px;
+    height: 550px;
 }
 
 .edits>*{
@@ -135,8 +165,10 @@ export default{
     margin-top: 20px;
     border-radius: 1rem;
 }
-.edits>img{
+.edits img{
     filter: invert(60%);
+    width: 30px;
+    height: 30px;
 }
 img:hover,img:active{
     filter: invert(0%);
@@ -144,6 +176,35 @@ img:hover,img:active{
 
 .block{
     flex: 1;
+}
+
+.fast{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.edit{
+    background-color: rgba(255,255,255,0);
+    width: 100%;
+    border: 1px solid #0F141C;
+    border-radius: .5rem;
+    padding: 3px;
+}
+
+.more{
+    display: flex;
+    justify-content: space-between;
+}
+
+.more>img{
+    width: 30px;
+    height: 30px;
+    filter: invert(60%);
+}
+.more>img:hover,.more>img:active{
+    filter: invert(0%);
 }
 
 </style>

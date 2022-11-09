@@ -40,6 +40,7 @@ socket.on("asset", (res={}) => {
 
 const disconnect = throttle(()=>{
   ctx.$log({message:"连接断开",type:"error"});
+  setAllow(true);
   router.push({name:"index"});
 },300);
 

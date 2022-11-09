@@ -18,7 +18,7 @@
                 </template>
             </el-page-header>
         </div>
-        <canvas id="canvas"></canvas>
+        <canvas id="canvas" ref="cvs"></canvas>
         <vueOpener :toolShow="toolShow" @open="openHandle">
             <el-collapse v-model="activeNames" @change="handleChange">
             <el-collapse-item title="工程" name="0">
@@ -39,7 +39,7 @@
                     <input placeholder="图层名称"/>
                 </div>
                 <div class="icons">
-                    <img v-for="item in toolsConfig.layout" :src="item.src"/>
+                    <img v-for="item in toolsConfig.layout" :src="item.src" v-click2="keyRun"/>
                 </div>
             </el-collapse-item>
             <el-collapse-item title="形状" name="2">
@@ -47,17 +47,12 @@
                     <img v-for="item in toolsConfig.shape" :src="item.src" v-click2="()=>makeShape(item)"/>
                 </div>
             </el-collapse-item>
-            <el-collapse-item title="自定义" name="3">
-                <div class="icons">
-                    <img v-for="item in toolsConfig.custom" :src="item.src"/>
-                </div>
-            </el-collapse-item>
-            <el-collapse-item title="样式表" name="4">
+            <el-collapse-item title="样式表" name="3">
                 <div>
 
                 </div>
             </el-collapse-item>
-            <el-collapse-item title="更多信息" name="5">
+            <el-collapse-item title="更多信息" name="4">
                 <div>
                 Decision making: giving advices about operations is acceptable, but do
                 not make decisions for the users;
@@ -70,8 +65,8 @@
             </el-collapse-item>
             </el-collapse>
         </vueOpener>
-        <vueEditVue/>
-        <vueConsoleVue :show="consoleShow" @close="consoleHandle"/>
+        <vueEditVue @KD="kd" />
+        <vueConsoleVue :show="consoleShow" @close="consoleHandle" />
     </div>
 </template>
 
@@ -87,7 +82,7 @@ import vueConsoleVue from '@/components/vue-console.vue';
 import vueOpener from '@/components/vue-opener.vue'
 import vueEditVue from '@/components/vue-edit.vue';
 import { useStore } from 'vuex';
-import {throttle,shakeProof} from "@/api/util";
+import {throttle,shakeProof,fireKeyEvent} from "@/api/util";
 import { padEnd } from 'lodash';
 
 const graphMap = {};
@@ -149,11 +144,11 @@ const toolsConfig = ref({
         label:"删除"
     }],
     shape:[{
+        src:require("../assets/icon/编辑.png"),
+        label:"曲线"
+    },{
         src:require("../assets/icon/直线.png"),
         label:"直线"
-    },{
-        src:require("../assets/icon/曲线.png"),
-        label:"曲线"
     },{
         src:require("../assets/icon/三角形.png"),
         label:"三角形"
@@ -163,10 +158,6 @@ const toolsConfig = ref({
     },{
         src:require("../assets/icon/矩形.png"),
         label:"矩形"
-    }],
-    custom:[{
-        src:require("../assets/icon/编辑.png"),
-        label:"编辑"
     },{
         src:require("../assets/icon/文字.png"),
         label:"文字"
@@ -174,6 +165,26 @@ const toolsConfig = ref({
     style:[],
     more:[]
 });
+
+const cvs = ref(null)
+
+const kd = v=>{
+    // cvs.$el.click();
+    let obj = canvas.getActiveObject();
+    // if(obj){
+    //     canvas.remove(obj);
+    //     canvas.add(obj)
+    //     // addPixel(obj.toJSON());
+    // }
+    if(obj.type==="i-text"){
+        obj.exitEditing();
+        canvas.remove(obj);
+        canvas.add(obj);
+    }
+    // obj.abortCursorAnimation();
+    // obj.isEditing = false;
+    // canvas.renderAll();
+}
 
 const activeNames = ref(['2'])
 const handleChange = (val) => {
@@ -205,19 +216,22 @@ function sendCanvas(){
     });
 }
 
-const modified = shakeProof((frame)=>{
+const modified = shakeProof((frame,syn=false)=>{
     const {room:{rid},user:{uid}} = config.value;
     socket.emit("stream",{
         event:"edit",
-        rid,uid,
+        rid,uid,syn,
         frame
     });
 },2);
 
+let defLine = false;
+let stroke = false;
+let LineId = null;
+
 const makeShape = item=>{
     const {label} = item;
-    const [left,top] = [window.innerWidth/2,window.innerHeight/3];
-    const style = { top, left, width: 50, height: 50, fill: 'gray',stroke:"gray" ,radius:50,gid:ID(),date:Date.now()};
+    const style = { top:100,left:200,width: 50, height: 50,fill:"gray",stroke:"gray" ,radius:50,gid:ID(),date:Date.now()};
     let create = null;
     switch(label){
         case "直线":
@@ -228,27 +242,13 @@ const makeShape = item=>{
             break;
         case "曲线":
             create = {
-                type:"Polyline",
-                params:[[ 
-                { 
-                    x:200, 
-                    y:10 
-                }, 
-                { 
-                    x:250, 
-                    y:50 
-                }, { 
-                    x:250, 
-                    y:180 
-                }, { 
-                    x:150, 
-                    y:180 
-                }, { 
-                    x:150, 
-                    y:50 
-                }],style]
+                type:"Path",
+                params:['M 0 0 L 50 0 M 0 0 L 4 -3 M 0 0 L 4 3 z',style]
             };
             break;
+            // defLine = true;
+            // LineId = ID();
+            // return;
         case "三角形":
             create = {
                 type:"Triangle",
@@ -273,13 +273,21 @@ const makeShape = item=>{
                 ]
             };
             break;
+        case "文字":
+            create = {
+                type:"IText",
+                params:[
+                    'TEXT',
+                    style
+                ]
+            };
+            break;
     }
     if(!create){
         return;
     }
     const graph = new fabric[create.type](...create.params);
     if(graph){
-        const frame = create;
         // after:render：画布重绘后
         // object:selected：对象被选中
         // object:moving：对象移动
@@ -299,10 +307,7 @@ const makeShape = item=>{
                 pixel
             });
             addPixel(pixel);
-        }catch(err){
-
-        }
-        // canvas.add(graph);
+        }catch(err){}
     }
 }
 
@@ -333,6 +338,10 @@ const makeAct = item=>{
     });
 }
 
+const keyRun = ()=>{
+    fireKeyEvent()
+}
+
 let editing = false;
 
 function addPixel(...args){
@@ -348,6 +357,9 @@ function addPixel(...args){
                     pixel:o.toJSON(["gid","date"])
                 });
             };
+            if(o.type==="i-text"){
+                o.onDeselect = editcall;
+            }
             o.on("moving",editcall);
             o.on("scaling",editcall);
             o.on("rotating",editcall);
@@ -420,6 +432,7 @@ function init() {
         // if(!editing){
         //     panning = true;
         // }
+        canvas.isDrawingMode = 1;
     });
     // 鼠标抬起时
     canvas.on('mouse:up', function(options) {
@@ -427,6 +440,21 @@ function init() {
         panning = false;
         editing = false;
         // canvas.selection = true;
+        // canvas.isDrawingMode = 0; 
+        let obj = canvas.getObjects()[0];
+        let json = obj.toJSON()
+        console.log(obj.toJSON());
+        canvas.remove(obj);
+        setTimeout(() => {
+            let path = new fabric.Path(json.path,json);
+            canvas.add(path);
+            canvas.isDrawingMode = 0;
+        }, 1000);
+        // let path = new fabric.Path(json.path,json);
+        // path.set(obj.toJSON());
+        // canvas.add(path);
+        // canvas.renderAll();
+        // canvas.isDrawingMode = 0;
     });
     // 鼠标移动时
     canvas.on('mouse:move', function(options) {
@@ -446,22 +474,52 @@ function init() {
     });
 
     canvas.on("object:modified",function(option){
-        // option.target.date = Date.now();
-        // if(option.target._objects){
-        //     option.target._objects.forEach(obj=>{
-        //         modified({
-        //             type:"编辑",
-        //             pixel:obj.toJSON(["gid","date"])
-        //         });
-        //     });
-        // }else{
-        //     modified({
-        //         type:"编辑",
-        //         pixel:option.target.toJSON(["gid","date"])
-        //     });
-        // }
+        if(option.target._objects){
+            // option.target._objects.forEach(obj=>{
+            //     modified({
+            //         type:"编辑",
+            //         pixel:obj.toJSON(["gid","date"])
+            //     });
+            // });
+        }else{
+            option.target.date = Date.now();
+            modified({
+                type:"编辑",
+                pixel:option.target.toJSON(["gid","date"])
+            },true);
+        }
     });
 
+    //线段
+//https://juejin.cn/post/7026941253845516324
+
+    //画笔
+//https://blog.csdn.net/jamesclark/article/details/123125753
+
+
+//event
+//http://fabricjs.com/events
+
+//curve
+//http://fabricjs.com/quadratic-curve
+    // canvas.on('after:render', function (options) {
+    //     console.log(canvas.getActiveObject())
+    // });
+
+    canvas.freeDrawingBrush.width = 5;
+    canvas.freeDrawingBrush.color = 'pink';
+    canvas.isDrawingMode = 1; 
+    
+    // var brush = new fabric.PencilBrush(canvas);
+    // canvas._onMouseMoveInDrawingMode = function (e) {
+    //     var pointer = canvas.getPointer(e);
+    //     // pointer.x = 100;
+    //     // console.log(canvas.freeDrawingBrush.toJSON());    
+    //     // brush.onMouseDown({x:pointer.x, y:pointer.y});  
+    //     // brush.onMouseDown({x:10,y:20});  
+    //     // return false;
+    //     console.log(canvas.toJSON(["gid","date"]));
+    // }
     canvas.setWidth(window.innerWidth);
     canvas.setHeight(window.innerHeight);
     window.onresize = (canvas=>{
@@ -484,6 +542,10 @@ onMounted(() => {
     init();
     socket.on("stream",stream);
     refresh();
+    document.onkeydown=function(event){
+        event = event|| window.event;
+        console.log(event.keyCode );
+   }
 });
 
 onBeforeUnmount(()=>{

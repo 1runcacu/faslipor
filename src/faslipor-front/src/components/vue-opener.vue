@@ -1,12 +1,12 @@
 <template>
     <div class="drag-opener" v-if="select" @click="change"></div>
     <transition name="drag-win" v-show="!select">
-        <div class="drag-box" >
-            <div id="box" class="ban-select-font" v-drag>
-                <div class="header">
-                    <strong>工具栏</strong>
-                    <el-icon class="close" @click="change"><Close/></el-icon>
-                </div>
+        <div class="drag-box ban-select-font" >
+            <div class="header" v-drag>
+                <strong>工具栏</strong>
+                <el-icon class="close" @click="change"><Close/></el-icon>
+            </div>
+            <div id="box" v-drag="PC">                
                 <el-scrollbar class="body">
                     <slot/>
                 </el-scrollbar>
@@ -39,6 +39,16 @@ export default{
         toolShow:function(now,old){
             this.select = !now;
         }
+    },
+    computed:{
+        PC:function(){
+            if (/(iPad|iPod)/i.test(navigator.userAgent)) {
+                return false;
+            } else if (/(iPhone|Android|iOS)/i.test(navigator.userAgent)) {
+                return false;
+            }
+            return true;
+        }
     }
 }
 
@@ -50,10 +60,12 @@ export default{
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 35px;
 }
 
 .body{
     width: 100%;
+    overflow: auto;
     flex: 1;
 }
 
@@ -75,7 +87,7 @@ export default{
 }
 #box{
     width: 100%;
-    height: 100%;
+    height: calc(100% - 35px);
     display: flex;
     flex-direction: column;
 }
@@ -103,8 +115,5 @@ export default{
 .close:hover,.close:active{
     transform: scale(1.05,1.05);
     color: red;
-}
-.body{
-
 }
 </style>
