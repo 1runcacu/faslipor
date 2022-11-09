@@ -23,7 +23,7 @@
             <el-collapse v-model="activeNames" @change="handleChange">
             <el-collapse-item title="工程" name="0">
                 <div class="icons">
-                    <img v-for="item in toolsConfig.project" :src="item.src"/>
+                    <img v-for="item in toolsConfig.project" :src="item.src" v-click2="()=>makeAct(item)"/>
                 </div>
             </el-collapse-item>
             <el-collapse-item title="图层" name="1">
@@ -70,6 +70,7 @@
             </el-collapse-item>
             </el-collapse>
         </vueOpener>
+        <vueEditVue/>
         <vueConsoleVue :show="consoleShow" @close="consoleHandle"/>
     </div>
 </template>
@@ -84,6 +85,7 @@ import { onMounted } from 'vue'
 import { fabric } from 'fabric'
 import vueConsoleVue from '@/components/vue-console.vue';
 import vueOpener from '@/components/vue-opener.vue'
+import vueEditVue from '@/components/vue-edit.vue';
 import { useStore } from 'vuex';
 import {throttle,shakeProof} from "@/api/util";
 import { padEnd } from 'lodash';
@@ -98,24 +100,7 @@ var config = computed(()=>store.state.params||{room:{},user:{}});
 
 const onBack = () => {
     try{
-        const {room:{rid},user:{uid}} = config.value;
-        if(rid&&uid){
-            ElMessageBox.confirm('确定退出房间?',"", {
-                confirmButtonText: "确定",
-                cancelButtonText: "取消",
-            }).then(()=>{
-                // router.push({path:"/"});
-                socket.emit("query",{
-                    event:"exit",
-                    params:{
-                        uid,
-                        rid
-                    }
-                });
-            }).catch(()=>{});
-        }else{
-            router.push({path:"/"});
-        }
+        router.go(-1);
     }catch(err){
         router.push({path:"/"});
     }
@@ -157,10 +142,10 @@ const toolsConfig = ref({
         label:"重做"
     }],
     layout:[{
-        src:require("../assets/icon/plus.png"),
+        src:require("../assets/icon/添加.png"),
         label:"添加"
     },{
-        src:require("../assets/icon/delete.png"),
+        src:require("../assets/icon/删除.png"),
         label:"删除"
     }],
     shape:[{
@@ -189,14 +174,6 @@ const toolsConfig = ref({
     style:[],
     more:[]
 });
-
-const list = ref([{
-    src:require("../assets/icon/plus.png"),
-    label:"添加"
-},{
-    src:require("../assets/icon/delete.png"),
-    label:"删除"
-}]);
 
 const activeNames = ref(['2'])
 const handleChange = (val) => {
@@ -329,6 +306,33 @@ const makeShape = item=>{
     }
 }
 
+const makeAct = item=>{
+    const {label} = item;
+    const {room:{rid},user:{uid}} = config.value;
+    let event = "error";
+    switch(label){
+        case "保存":
+            event="save";
+            break;
+        case "导出":
+            event="export";
+            break;
+        case "导入":
+            event="import";
+            break;
+        case "撤销":
+            event="undo";
+            break;
+        case "重做":
+            event="redo"
+            break;
+    }
+    socket.emit("stream",{
+        event,
+        rid,uid
+    });
+}
+
 let editing = false;
 
 function addPixel(...args){
@@ -390,6 +394,7 @@ const stream = data=>{
                 break;
             case "refresh":
                 canvas.clear();
+                console.log(frame);
                 addPixel(...Object.values(frame));
                 break;
         }
@@ -407,9 +412,6 @@ function init() {
     canvas.selection = false;
 
     canvas.on('mouse:down', function(options) {
-        // console.log("鼠标按下了：", options.e.clientX, options.e.clientY);
-        // shakeProof(()=>sendCanvas(),100);
-        // send();
         if(options.e.ctrlKey) {
           panning = true;
         //   canvas.selection = false;
@@ -425,7 +427,6 @@ function init() {
         panning = false;
         editing = false;
         // canvas.selection = true;
-        // console.log("鼠标抬起了：", options.e.clientX, options.e.clientY);
     });
     // 鼠标移动时
     canvas.on('mouse:move', function(options) {
@@ -434,8 +435,6 @@ function init() {
             canvas.relativePan(delta);
         }
         // send();
-        // shakeProof(()=>sendCanvas(),100);
-        // console.log("鼠标移动了：", options.e.clientX, options.e.clientY);
     });
     
     canvas.on("mouse:wheel", function(options) {
@@ -463,22 +462,6 @@ function init() {
         // }
     });
 
-    // 线性渐变
-    // let gradient = new fabric.Gradient({
-    //   type: 'linear', // linear or radial
-    //   gradientUnits: 'pixels', // pixels or pencentage 像素 或者 百分比
-    //   coords: { x1: 0, y1: 0, x2: circle.width, y2: 0 }, // 至少2个坐标对(x1，y1和x2，y2)将定义渐变在对象上的扩展方式
-    //   colorStops:[ // 定义渐变颜色的数组
-    //     { offset: 0, color: 'red' },
-    //     { offset: 0.2, color: 'orange' },
-    //     { offset: 0.4, color: 'yellow' },
-    //     { offset: 0.6, color: 'green' },
-    //     { offset: 0.8, color: 'blue' },
-    //     { offset: 1, color: 'purple' },
-    //   ]
-    // })
-    // circle.set('fill', gradient);
-    // canvas.add(circle);
     canvas.setWidth(window.innerWidth);
     canvas.setHeight(window.innerHeight);
     window.onresize = (canvas=>{

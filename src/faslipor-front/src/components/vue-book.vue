@@ -4,8 +4,8 @@
         <img src="@/assets/logo.png" id="logo"/>
       </div>
     </div>
-    <winUiVue :resizeAble="true" @close="closeWin" width="50vh" height="40vh" v-show="winShow"
-        minWidth="400px" minHeight="280px"
+    <winUiVue :resizeAble="true" @close="closeWin" :width="WH" height="40vh" v-show="winShow"
+        minWidth="30vh" minHeight="280px" 
     >
         <template #head>
           <div><b>{{title}}</b></div>
@@ -108,7 +108,7 @@
 
 <script setup>
 import { ElMenu,ElSubMenu,ElMenuItemGroup,ElMenuItem,ElCollapse,ElCollapseItem } from 'element-plus';
-import { ref } from 'vue';
+import { ref,computed } from 'vue';
 import winUiVue from './win-ui.vue';
 import {
   Document,
@@ -142,6 +142,11 @@ const activeNames = ref(['1'])
 const handleChange = (val) => {
   console.log(val)
 }
+
+const WH = computed(()=>{
+    console.log(window.innerWidth)
+    return (window.innerWidth>500?500:window.innerWidth)+"px"
+});
 
 </script>
 

@@ -46,7 +46,7 @@ export default{
         },
         width:{
             type:String,
-            default:"500px"
+            default:"300px"
         },
         height:{
             type:String,
@@ -192,8 +192,9 @@ export default{
     width: 100%;
     height: calc(100% - v-bind("headHeight"));
     box-sizing: border-box;
-    overflow: auto;
+    overflow: hidden;
     font-size: 13px;
     line-height: 1.6;
+    min-height: 30vh;
 }
 </style>

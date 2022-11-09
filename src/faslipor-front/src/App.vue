@@ -9,10 +9,11 @@
 <script setup>
 import VueSnow from '@/components/vue-snow.vue';
 import vueBookVue from '@/components/vue-book.vue';
-import { inject,computed,getCurrentInstance,onMounted } from "vue";
+import { inject,computed,getCurrentInstance,onMounted, onUnmounted } from "vue";
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex';
 import { throttle } from '@/api/util';
+import { setAllow } from "@/state";
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 const socket = inject("socket");
@@ -57,27 +58,47 @@ socket.on("reconnect",res=>{
 socket.on("redirect", (res={}) => {
     console.log("redirect:",res);
     store.commit("setParams",res.params);
+    setAllow(true);
     router.push({path:res.path});
 });
 
-const height = computed(()=>store.state.window.innerHeight);
+const height = computed(()=>store.state.window.innerHeight+"px");
+
+const {innerWidth,innerHeight} = window;
+
+const resize = ()=>{
+  if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+    store.commit("setWindow",{innerWidth,innerHeight});
+  } else if (/(Android)/i.test(navigator.userAgent)) {
+    store.commit("setWindow",{innerWidth,innerHeight});
+  } else {
+    store.commit("setWindow",{innerWidth,innerHeight});
+  }
+  // store.commit("setWindow",window);
+};
+
+
+  // const resize = ()=>{
+  //   store.commit("setWindow",{innerWidth,innerHeight});
+  // }
+
 
 onMounted(()=>{
-  window.addEventListener("resize",()=>{
-    store.commit("setWindow");
-  })
+  if(window.innerWidth>1200){
+    window.addEventListener("resize",resize);
+  }
 })
 
-history.pushState(null, null, document.URL);
-window.addEventListener('popstate', function () {
-    history.pushState(null, null, document.URL);
-});
+onUnmounted(()=>{
+  window.removeEventListener(resize);
+})
 
-window.onpopstate = function () {
-        /// 当点击浏览器的 后退和前进按钮 时才会被触发， 
-    window.history.pushState('forward', null, '');
-    window.history.forward(1);
-};
+
+// window.onpopstate = function () {
+//         /// 当点击浏览器的 后退和前进按钮 时才会被触发， 
+//     window.history.pushState('forward', null, '');
+//     window.history.forward(1);
+// };
 
 </script>
 
@@ -85,7 +106,8 @@ window.onpopstate = function () {
 html,body{
   overflow: hidden;
   width: 100%;
-  height: 100%;
+  /* height: 100%; */
+  height: v-bind(height) !important;
   margin: 0;
   box-sizing: border-box;
   background-color: #F5F7F9;
@@ -105,7 +127,7 @@ body {
 }
 
 #app {
-  height: v-bind(height);
+  height: v-bind(height) !important;
 }
 
   /* vue渐入渐出样式 */

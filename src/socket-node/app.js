@@ -206,4 +206,49 @@ server.listen(8099,() => {
     console.log("server is up and running on port 8102");
 });
 
-
+// actionBuffer = {
+//   "rid1":{
+//     "lid1":{
+//       gid1:[
+//         {
+//           event:"添加",
+//           date:0,
+//           frame:{}//xxxxxxx
+//         },
+//         {
+//           event:"编辑",
+//           date:2,
+//           frame:{}//xxxxxxx
+//         },
+//         {
+//           event:"编辑",
+//           date:4,
+//           frame:{}//xxxxxxx
+//         },
+//         {
+//           event:"删除",
+//           date:5,
+//           frame:{}//xxxxxxx
+//         }
+//       ]
+//     },
+//     "lid2":{
+//       gid1:[
+//         {
+//           event:"添加",
+//           date:0,
+//           frame:{}//xxxxxxx
+//         },{
+//           event:"编辑",
+//           date:4,
+//           frame:{}//xxxxxxx
+//         },
+//         {
+//           event:"删除",
+//           date:5,
+//           frame:{}//xxxxxxx
+//         }
+//       ]
+//     }
+//   }
+// }
