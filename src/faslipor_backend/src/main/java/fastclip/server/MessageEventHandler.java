@@ -23,6 +23,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.concurrent.ConcurrentMap;
 /*
 stream           | {uid,rid,frame} | increment 事件
@@ -110,7 +112,7 @@ public class MessageEventHandler {
            //部署时注意这里需要改
            Message message=new Message();
            message.type="info";
-           String filePath="/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/resources/Room";
+           String filePath="/www/web/app/Room";
            File dir=new File(filePath);
            if(!dir.exists()){
                dir.mkdirs();
@@ -130,7 +132,7 @@ public class MessageEventHandler {
                if(null!=writer)
                    writer.close();
            }
-           message.message="Room"+"/"+uid+".fsl";
+           message.message="/Room"+"/"+uid+".fsl";
            log.info(JSON.toJSONString(message));
            /*/localhost:8101/Room/360689.fsl
            * */
@@ -157,17 +159,18 @@ public class MessageEventHandler {
            if(historyAllMap.get(myHouse.rid)==null) return;
            if(historyAllMap.get(myHouse.rid).size()==0) return;
            log.info(historyAllMap.get(myHouse.rid).size()+" ");
+           log.info("回撤前的历史记录"+historyAllMap.get(myHouse.rid));
            Map<String,JSONObject> elem=historyAllMap.get(myHouse.rid).pop();
            Stack<Map<String,JSONObject>> myStack=redoAllMap.get(myHouse.rid);
            if(myStack==null) myStack=new Stack<>();
-           myStack.add(elem);
+           myStack.push(elem);
            redoAllMap.put(myHouse.rid,myStack);
            //更新当前帧
            //让它去调用refresh
            Refresh  myRefresh=new Refresh();
            myRefresh.uid=uid;
            myRefresh.rid=myHouse.rid;
-           log.info(historyAllMap.get(myHouse.rid).toString());
+           log.info("回撤后的历史记录"+historyAllMap.get(myHouse.rid));
            if(historyAllMap.get(myHouse.rid).size()==0) //
            {
                myRefresh.frame=null;
@@ -177,6 +180,7 @@ public class MessageEventHandler {
            }else{
                nowAllMap.put(myHouse.rid,(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek()));
                myRefresh.frame=(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek());
+               log.info("栈的顶部，即当前应该显示的内容"+JSONObject.toJSONString(historyAllMap.get(myHouse.rid).peek()));
            }
            List<JSONObject> nameList=redisService.get(myHouse.rid+"nameList",List.class);
            List<JSONObject> nameList0 = new ArrayList(nameList);
@@ -184,6 +188,7 @@ public class MessageEventHandler {
                NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
                    log.info(u.uid);
                    myRefresh.uid=u.uid;
+                   log.info("向房间里所有人发送的内容"+JSONObject.toJSONString(myRefresh));
                    socketIOClientMap.get(u.uid).sendEvent("stream",myRefresh);
            }
 
@@ -221,7 +226,7 @@ public class MessageEventHandler {
                return;
            }
            myQueue.add(data);
-           log.info(String.valueOf(myQueue.size()));
+           log.info("myQueue.size()"+String.valueOf(myQueue.size()));
            log.info(String.valueOf(flag)+"转发");
           while(!flag){
               Thread.sleep(10);
@@ -235,10 +240,9 @@ public class MessageEventHandler {
            Istream myData=new Istream();
            myData=myQueue.removeLast();
            //all是该房间的全量帧 由一个个gid对应的pixel组成
-           //rid,(Stack<gid,pixel>)
            Map<String,JSONObject> all=JSON.toJavaObject(nowAllMap.get(myData.rid),Map.class);
            if(all==null) all=new HashMap<>();
-           log.info(all.toString());
+           //log.info(all.toString());
            //这里需要缓存之前的gid
            boolean f=true;
            if(all.get(myData.frame.pixel.get("gid").toString())!=null&&!myData.syn){
@@ -246,15 +250,23 @@ public class MessageEventHandler {
            }
            all.put(myData.frame.pixel.get("gid").toString(),myData.frame.pixel);
            Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myData.rid);
-
            log.info(JSONObject.toJSONString(myStack));
            if(myStack==null)//该房间还未有历史记录
-               myStack=new Stack<>();
+           {myStack=new Stack<>();
+           historyAllMap.put(myData.rid, myStack);
+           }
            if(f) {
-               myStack.add(all);
-               historyAllMap.put(myData.rid, myStack);
-               log.info("加入后的历史记录大小"+String.valueOf(historyAllMap.get(myData.rid).size()));
-               log.info(JSONObject.toJSONString(historyAllMap.get(myData.rid)));
+               log.info("当前的历史记录大小"+historyAllMap.get(myData.rid).size());
+               log.info("当前的历史记录"+myStack);
+               Map<String,JSONObject> all0=new HashMap<>();
+               ObjectMapper objectMapper=new ObjectMapper();
+               all0=objectMapper.readValue(objectMapper.writeValueAsString(all),Map.class);
+               myStack.push(all0);
+               log.info("加入后的历史记录1"+myStack);
+               log.info("加入后的历史记录大小1 "+String.valueOf(historyAllMap.get(myData.rid).size()));
+               historyAllMap.put(myData.rid, myStack);  //引用类型，不用put
+               log.info("加入后的历史记录2"+historyAllMap.get(myData.rid));
+               log.info("加入后的历史记录大小2 "+String.valueOf(historyAllMap.get(myData.rid).size()));
            }
            log.info("put"+myData.rid);
            nowAllMap.put(myData.rid, (JSONObject) JSONObject.toJSON(all));
