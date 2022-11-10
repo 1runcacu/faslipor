@@ -18,7 +18,14 @@
                 </template>
             </el-page-header>
         </div>
-        <canvas id="canvas" ref="cvs"></canvas>
+        <div id="cvs">
+            <div id="layout" class="lay">
+                <canvas id="pencil" ></canvas>
+            </div>
+            <div id="layout" >
+                <canvas id="canvas" ref="BUFFER" ></canvas>
+            </div>
+        </div>
         <vueOpener :toolShow="toolShow" @open="openHandle">
             <el-collapse v-model="activeNames" @change="handleChange">
             <el-collapse-item title="工程" name="0">
@@ -101,6 +108,8 @@ const onBack = () => {
     }
 }
 
+const zindex = ref(0);
+
 const value = ref();
 const options = ref([{
     value:1,
@@ -166,8 +175,6 @@ const toolsConfig = ref({
     more:[]
 });
 
-const cvs = ref(null)
-
 const kd = v=>{
     // cvs.$el.click();
     let obj = canvas.getActiveObject();
@@ -225,6 +232,8 @@ const modified = shakeProof((frame,syn=false)=>{
     });
 },2);
 
+const BUFFER = ref(null);
+
 let defLine = false;
 let stroke = false;
 let LineId = null;
@@ -241,14 +250,8 @@ const makeShape = item=>{
             };
             break;
         case "曲线":
-            create = {
-                type:"Path",
-                params:['M 0 0 L 50 0 M 0 0 L 4 -3 M 0 0 L 4 3 z',style]
-            };
-            break;
-            // defLine = true;
-            // LineId = ID();
-            // return;
+            zindex.value = 2;
+            return;
         case "三角形":
             create = {
                 type:"Triangle",
@@ -414,14 +417,19 @@ const stream = data=>{
 }
 
 var canvas; 
+var pencil;
 
 const send = shakeProof(()=>sendCanvas(),30);
 
 function init() {
-    canvas = new fabric.Canvas('canvas') // 实例化fabric，并绑定到canvas元素上
+    canvas = new fabric.Canvas('canvas'); // 实例化fabric，并绑定到canvas元素上
+    pencil = new fabric.Canvas('pencil');
     let panning = false;
     
     canvas.selection = false;
+    pencil.selection = false;
+
+    console.log(BUFFER._value.style.position);
 
     canvas.on('mouse:down', function(options) {
         if(options.e.ctrlKey) {
@@ -432,7 +440,6 @@ function init() {
         // if(!editing){
         //     panning = true;
         // }
-        canvas.isDrawingMode = 1;
     });
     // 鼠标抬起时
     canvas.on('mouse:up', function(options) {
@@ -441,15 +448,17 @@ function init() {
         editing = false;
         // canvas.selection = true;
         // canvas.isDrawingMode = 0; 
-        let obj = canvas.getObjects()[0];
-        let json = obj.toJSON()
-        console.log(obj.toJSON());
-        canvas.remove(obj);
-        setTimeout(() => {
-            let path = new fabric.Path(json.path,json);
-            canvas.add(path);
-            canvas.isDrawingMode = 0;
-        }, 1000);
+        // let obj = canvas.getObjects()[0];
+        // let json = obj.toJSON()
+        // console.log(obj.toJSON());
+        // canvas.remove(obj);
+        // setTimeout(() => {
+        //     let path = new fabric.Path(json.path,json);
+        //     canvas.add(path);
+        //     canvas.isDrawingMode = 1;
+        // }, 1000);
+
+
         // let path = new fabric.Path(json.path,json);
         // path.set(obj.toJSON());
         // canvas.add(path);
@@ -463,6 +472,17 @@ function init() {
             canvas.relativePan(delta);
         }
         // send();
+    });
+
+    pencil.on('mouse:up', function(options) {
+        zindex.value = 0;
+        let obj = pencil.getObjects()[0];
+        let json = obj.toJSON();
+        pencil.remove(obj);
+        json.gid = ID();
+        json.date = Date.now();
+        let path = new fabric.Path(json.path,json);
+        canvas.add(path);
     });
     
     canvas.on("mouse:wheel", function(options) {
@@ -506,9 +526,11 @@ function init() {
     //     console.log(canvas.getActiveObject())
     // });
 
-    canvas.freeDrawingBrush.width = 5;
-    canvas.freeDrawingBrush.color = 'pink';
-    canvas.isDrawingMode = 1; 
+    pencil.freeDrawingBrush.width = 5;
+    pencil.freeDrawingBrush.color = 'pink';
+    pencil.isDrawingMode = 1; 
+
+
     
     // var brush = new fabric.PencilBrush(canvas);
     // canvas._onMouseMoveInDrawingMode = function (e) {
@@ -522,10 +544,14 @@ function init() {
     // }
     canvas.setWidth(window.innerWidth);
     canvas.setHeight(window.innerHeight);
+    pencil.setWidth(window.innerWidth);
+    pencil.setHeight(window.innerHeight);
     window.onresize = (canvas=>{
         return function(){
             canvas.setWidth(window.innerWidth);
             canvas.setHeight(window.innerHeight);
+            pencil.setWidth(window.innerWidth);
+            pencil.setHeight(window.innerHeight);
         };
     })(canvas);
 }
@@ -579,6 +605,25 @@ onBeforeUnmount(()=>{
 #canvas{
     position: absolute;
     background-color: white;
+}
+#pencil{
+    position: absolute;
+    background-color: rgba(255,255,255,0.5);
+}
+
+#cvs{
+    position: relative;
+}
+/* .canvas-container{
+    position: absolute !important;   
+} */
+
+#layout{
+    position: absolute;
+}
+
+.lay{
+    z-index: v-bind(zindex) !important;
 }
 
 .console{
