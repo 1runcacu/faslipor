@@ -65,7 +65,7 @@ socket.on("redirect", (res={}) => {
 
 const height = computed(()=>store.state.window.innerHeight+"px");
 
-const {availWidth,availHeight} = window;
+const {availWidth,availHeight} = screen;
 
 const resize = ()=>{
   if (/(iPad|iPod|iOS)/i.test(navigator.userAgent)) {
