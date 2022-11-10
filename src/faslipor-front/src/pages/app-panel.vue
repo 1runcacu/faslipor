@@ -46,7 +46,7 @@
                     <input placeholder="图层名称"/>
                 </div>
                 <div class="icons">
-                    <img v-for="item in toolsConfig.layout" :src="item.src" v-click2="keyRun"/>
+                    <img v-for="item in toolsConfig.layout" :src="item.src" />
                 </div>
             </el-collapse-item>
             <el-collapse-item title="形状" name="2">
@@ -72,7 +72,11 @@
             </el-collapse-item>
             </el-collapse>
         </vueOpener>
-        <vueEditVue @KD="kd" />
+        <vueEditVue @KD="kd" ref="edit"
+            v-model:lineWidth="EditBox.lineWidth"
+            v-model:fontSize="EditBox.fontSize"
+            v-model:fontColor="EditBox.fontColor"
+        />
         <vueConsoleVue :show="consoleShow" @close="consoleHandle" />
     </div>
 </template>
@@ -154,10 +158,7 @@ const toolsConfig = ref({
     }],
     shape:[{
         src:require("../assets/icon/编辑.png"),
-        label:"曲线"
-    },{
-        src:require("../assets/icon/直线.png"),
-        label:"直线"
+        label:"编辑"
     },{
         src:require("../assets/icon/三角形.png"),
         label:"三角形"
@@ -170,27 +171,35 @@ const toolsConfig = ref({
     },{
         src:require("../assets/icon/文字.png"),
         label:"文字"
+    },{
+        src:require("../assets/icon/直线.png"),
+        label:"直线"
+    },{
+        src:require("../assets/icon/曲线.png"),
+        label:"曲线"
     }],
     style:[],
     more:[]
 });
 
-const kd = v=>{
-    // cvs.$el.click();
-    let obj = canvas.getActiveObject();
-    // if(obj){
-    //     canvas.remove(obj);
-    //     canvas.add(obj)
-    //     // addPixel(obj.toJSON());
-    // }
-    if(obj.type==="i-text"){
-        obj.exitEditing();
-        canvas.remove(obj);
-        canvas.add(obj);
+let ctrlFlag = false;
+
+const kd = (v,state=false)=>{
+    switch(v){
+        case 13:
+            let obj = canvas.getActiveObject();
+            if(obj&&obj.type==="i-text"){
+                obj.exitEditing();
+                canvas.remove(obj);
+                canvas.add(obj);
+            }
+            zindex.value = 0;
+            pencil.clear();
+            break;
+        case 17:
+            ctrlFlag = state;
+            break;
     }
-    // obj.abortCursorAnimation();
-    // obj.isEditing = false;
-    // canvas.renderAll();
 }
 
 const activeNames = ref(['2'])
@@ -223,6 +232,7 @@ function sendCanvas(){
     });
 }
 
+
 const modified = shakeProof((frame,syn=false)=>{
     const {room:{rid},user:{uid}} = config.value;
     socket.emit("stream",{
@@ -249,7 +259,7 @@ const makeShape = item=>{
                 params:[[10, 10, 100, 100],style]
             };
             break;
-        case "曲线":
+        case "编辑":
             zindex.value = 2;
             return;
         case "三角形":
@@ -341,10 +351,6 @@ const makeAct = item=>{
     });
 }
 
-const keyRun = ()=>{
-    fireKeyEvent()
-}
-
 let editing = false;
 
 function addPixel(...args){
@@ -382,10 +388,6 @@ const stream = data=>{
             case "increment":
                 const create = frame;
                 const graph = new fabric[create.type](...create.params);
-                // graph.on('selected', function() {
-                //     sendCanvas();
-                //     console.log('被选中了');
-                // });
                 canvas.add(graph);
                 break;
             case "all":
@@ -396,9 +398,6 @@ const stream = data=>{
                 const {pixel} = frame;
                 if(!Objs.find(v=>{
                     if(v.gid===pixel.gid){
-                        // v.set(pixel);
-                        // canvas.renderAll();
-                        // v.loadFromJSON(pixel);
                         canvas.remove(v);
                         addPixel(pixel);
                     }
@@ -409,7 +408,6 @@ const stream = data=>{
                 break;
             case "refresh":
                 canvas.clear();
-                console.log(frame);
                 addPixel(...Object.values(frame));
                 break;
         }
@@ -418,6 +416,14 @@ const stream = data=>{
 
 var canvas; 
 var pencil;
+
+var edit = ref(null);
+
+const EditBox = ref({
+    lineWidth:"1.1",
+    fontSize:"1.2",
+    fontColor:"#234567"
+});
 
 const send = shakeProof(()=>sendCanvas(),30);
 
@@ -429,47 +435,45 @@ function init() {
     canvas.selection = false;
     pencil.selection = false;
 
-    console.log(BUFFER._value.style.position);
-
     canvas.on('mouse:down', function(options) {
-        if(options.e.ctrlKey) {
+        if(options.e.ctrlKey||ctrlFlag) {
           panning = true;
         //   canvas.selection = false;
         }
-        // console.log(editing,panning);
-        // if(!editing){
-        //     panning = true;
-        // }
+        // edit.value.reset(1,2,"#232312");
     });
+
+    let previousTouch = null;
+
     // 鼠标抬起时
     canvas.on('mouse:up', function(options) {
         // send();
         panning = false;
         editing = false;
-        // canvas.selection = true;
-        // canvas.isDrawingMode = 0; 
-        // let obj = canvas.getObjects()[0];
-        // let json = obj.toJSON()
-        // console.log(obj.toJSON());
-        // canvas.remove(obj);
-        // setTimeout(() => {
-        //     let path = new fabric.Path(json.path,json);
-        //     canvas.add(path);
-        //     canvas.isDrawingMode = 1;
-        // }, 1000);
-
-
-        // let path = new fabric.Path(json.path,json);
-        // path.set(obj.toJSON());
-        // canvas.add(path);
-        // canvas.renderAll();
-        // canvas.isDrawingMode = 0;
+        previousTouch = null;
     });
     // 鼠标移动时
     canvas.on('mouse:move', function(options) {
         if (panning && options && options.e) {
-            const delta = new fabric.Point(options.e.movementX, options.e.movementY);
+            if(options.e.movementX!=undefined&&options.e.movementY!=undefined){
+
+            }else{
+                const touch = options.e.touches[0];
+                if(previousTouch!=undefined){
+                    options.e.movementX = touch.screenX - previousTouch.screenX;
+                    options.e.movementY = touch.screenY - previousTouch.screenY;
+                }else{
+                    previousTouch = touch;
+                    return;
+                }
+                previousTouch = touch;
+            }
+            let delta = new fabric.Point(options.e.movementX, options.e.movementY);
+            if(delta.x==undefined||delta.y==undefined){
+                return;
+            }
             canvas.relativePan(delta);
+            pencil.relativePan(delta);
         }
         // send();
     });
@@ -478,11 +482,16 @@ function init() {
         zindex.value = 0;
         let obj = pencil.getObjects()[0];
         let json = obj.toJSON();
-        pencil.remove(obj);
+        pencil.clear();
         json.gid = ID();
         json.date = Date.now();
-        let path = new fabric.Path(json.path,json);
-        canvas.add(path);
+        addPixel(json);
+        modified({
+            type:"添加",
+            pixel:json
+        },true);
+        // let path = new fabric.Path(json.path,json);
+        // canvas.add(path);
     });
     
     canvas.on("mouse:wheel", function(options) {
@@ -491,6 +500,16 @@ function init() {
         zoom = Math.min(3, zoom); //最大是原来的3倍
         const zoomPoint = new fabric.Point(options.e.pageX, options.e.pageY);
         canvas.zoomToPoint(zoomPoint, zoom);
+        pencil.zoomToPoint(zoomPoint, zoom);
+    });
+
+    pencil.on("mouse:wheel", function(options) {
+        let zoom = (options.e.deltaY > 0 ? -0.1 : 0.1) + canvas.getZoom();
+        zoom = Math.max(0.1, zoom); //最小为原来的1/10
+        zoom = Math.min(3, zoom); //最大是原来的3倍
+        const zoomPoint = new fabric.Point(options.e.pageX, options.e.pageY);
+        canvas.zoomToPoint(zoomPoint, zoom);
+        pencil.zoomToPoint(zoomPoint, zoom);
     });
 
     canvas.on("object:modified",function(option){
@@ -526,7 +545,7 @@ function init() {
     //     console.log(canvas.getActiveObject())
     // });
 
-    pencil.freeDrawingBrush.width = 5;
+    pencil.freeDrawingBrush.width = 3;
     pencil.freeDrawingBrush.color = 'pink';
     pencil.isDrawingMode = 1; 
 
