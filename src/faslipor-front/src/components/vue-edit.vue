@@ -9,15 +9,42 @@
                 </div>
                 <el-scrollbar class="body">
                     <div class="edits">
-                        <img src="@/assets/icon/曲线大小.png"/>
-                        <img src="@/assets/icon/字体大小.png"/>
-                        <input type="color"/>
+                        <el-popover placement="left" trigger="click" :width="50">
+                            <template #reference>
+                                <img src="@/assets/icon/线型.png"/>
+                            </template>
+                            <input class="edit" type="number" max="10" min="0.1" placeholder="线宽大小" v-model="LW"
+                            />
+                        </el-popover>
+                        <el-popover placement="left" trigger="click" :width="50">
+                            <template #reference>
+                                <img src="@/assets/icon/字体大小.png"/>
+                            </template>
+                            <input class="edit" type="number" max="10" min="0.1" placeholder="字体大小" v-model="FS"
+                            />
+                        </el-popover>
+                        <input type="color" placeholder="字体颜色" v-model="FC"
+                        />
+                        <div class="block"></div>
+                        <el-button :type="CTL?'success':'info'" link @click="key(17)">CTL</el-button><br/>
+                        <el-button :type="ENT?'success':'info'" link @click="key(13)">ENT</el-button>
                         <div class="block"></div>
                         <img src="@/assets/icon/保存.png"/>
-                        <img src="@/assets/icon/复制.png"/>
-                        <img src="@/assets/icon/撤销.png"/>
-                        <img src="@/assets/icon/重做.png"/>
-                        <img src="@/assets/icon/删除.png"/>
+                        <!-- <el-icon><Operation/></el-icon> -->
+                        <!-- <img src="@/assets/icon/复制.png"/> -->
+                        <el-popover placement="left" trigger="click" :width="50">
+                            <template #reference>
+                                <img src="@/assets/icon/功能.png"/>
+                            </template>
+                            <div class="more">
+                                <img src="@/assets/icon/放大.png" @click="handle('放大')"/> 
+                                <img src="@/assets/icon/缩小.png" @click="handle('缩小')"/> 
+                                <img src="@/assets/icon/复制.png" v-click2="()=>handle('复制')"/> 
+                            </div>
+                        </el-popover>
+                        <img src="@/assets/icon/撤销.png" v-click2="()=>handle('撤销')"/>
+                        <img src="@/assets/icon/重做.png" v-click2="()=>handle('重做')"/>
+                        <img src="@/assets/icon/删除.png" v-click2="()=>handle('删除')"/>
                     </div>
                 </el-scrollbar>
             </div>
@@ -27,25 +54,52 @@
 
 <script>
 import {Close} from '@element-plus/icons-vue'
+import { ElPopover } from 'element-plus';
 
 export default{
     data(){
         return {
             select:false,
-            tools:[
-                {
-                    label:""
-                }
-            ]
+            CTL:false,
+            ENT:false,
+            LW:"1.1",
+            FS:"1.2",
+            FC:"#233456"
         };
-    },methods:{
+    },
+    emits:['update:lineWidth','update:fontSize','update:fontColor'],
+    props:{
+        lineWidth:Number,
+        fontSize:Number,
+        fontColor:String,
+    },
+    methods:{
+        reset(lw,fs,fc){
+            console.log(lw,fs,fc);
+            this.LW = lw;
+            this.FS = fs;
+            this.FC = fc;
+        },
         change(){
             this.select = !this.select;
             this.$emit("open",!this.select);
+        },
+        key(k){
+            // KeyEvent(k);
+            switch(k){
+                case 17:this.CTL = !this.CTL;this.$emit("KD",17,this.CTL);break;
+                case 13:this.ENT = true;setTimeout(() => {
+                    this.ENT = false;
+                }, 500);this.$emit("KD",13,this.ENT);break;
+            }
+        },
+        handle(e,data){
+            this.$emit("edit",e,data);
         }
     },
     components:{
-        Close
+        Close,
+        ElPopover
     },
     props:{
         toolShow:Boolean
@@ -53,7 +107,19 @@ export default{
     watch:{
         toolShow:function(now,old){
             this.select = !now;
+        },
+        LW:function(now){
+            this.$emit('update:lineWidth',now);
+        },
+        FS:function(now){
+            this.$emit('update:fontSize',now);
+        },
+        FC:function(now){
+            this.$emit('update:fontColor',now);
         }
+    },
+    mounted(){
+
     }
 }
 
@@ -126,7 +192,7 @@ export default{
     overflow: hidden;
     justify-content: stretch;
     align-items: flex-start;
-    height: 500px;
+    height: 550px;
 }
 
 .edits>*{
@@ -135,8 +201,10 @@ export default{
     margin-top: 20px;
     border-radius: 1rem;
 }
-.edits>img{
+.edits img{
     filter: invert(60%);
+    width: 30px;
+    height: 30px;
 }
 img:hover,img:active{
     filter: invert(0%);
@@ -144,6 +212,35 @@ img:hover,img:active{
 
 .block{
     flex: 1;
+}
+
+.fast{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.edit{
+    background-color: rgba(255,255,255,0);
+    width: 100%;
+    border: 1px solid #0F141C;
+    border-radius: .5rem;
+    padding: 3px;
+}
+
+.more{
+    display: flex;
+    justify-content: space-between;
+}
+
+.more>img{
+    width: 30px;
+    height: 30px;
+    filter: invert(60%);
+}
+.more>img:hover,.more>img:active{
+    filter: invert(0%);
 }
 
 </style>

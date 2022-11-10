@@ -1,4 +1,4 @@
-import { throttle } from "@/api/util"; //节流函数不再展示，不要直接去除即可，在下面样式引用去除即可
+import { throttle,lock,unlock } from "@/api/util"; //节流函数不再展示，不要直接去除即可，在下面样式引用去除即可
 
 const map = {};
 const Layout = [];
@@ -21,6 +21,7 @@ function changeDevice(e){
   return e; 
 }
 
+
 const directives = {
   drag: {
     mounted(el, binding) {
@@ -35,6 +36,7 @@ const directives = {
       Layout.push(id);
       odiv.style.zIndex = Layout.length;
       const onmousedown = (eve) => {
+        lock();
         sortLayout(id);
         eve = eve || window.event;
         eve = changeDevice(eve);
@@ -76,6 +78,7 @@ const directives = {
           // document.removeEventListener("touchmove",onmousemove);
           document.onmousemove = null;
           document.ontouchmove = null;
+          unlock();
         };
         document.onmouseup = onmouseup;
         document.ontouchend = onmouseup;

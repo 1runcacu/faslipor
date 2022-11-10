@@ -29,16 +29,6 @@
       </div>
       <el-pagination background layout="prev, pager, next" :total="total" v-model:current-page="current"/>
     </div>
-    <!-- <winUI :resizeAble="false" @close="closeWin" :closeShow="winShow" width="30vh" height="35vh" minHeight="35vh">
-        <template #head>
-          <div><b>房间创建</b></div>
-        </template>
-        <el-form class="form" v-drag="dragAble">
-          <vueInputVue value="FASLIPOR" @input="inRoomName" hint="房间名称"/>
-          <vueInputVue @input="inDescription" hint="房间简介"/>
-          <el-button :disabled="!lock" @click="createRoomHandle">快捷创建</el-button>
-        </el-form>
-    </winUI> -->
     <el-dialog v-model="winShow" title="创建房间" width="30%" draggable v-drag>
       <vueInputVue class="v-input" value="FASLIPOR" @input="inRoomName" hint="房间名称"/>
       <vueInputVue class="v-input" @input="inDescription" hint="房间简介"/>
@@ -122,6 +112,18 @@ var lockHandle = ()=>{
 }
 
 const createRoomHandle = ()=>{
+  if(roomName===""){
+    ctx.$message({
+      message:"房间名称不为空~",
+      type:"error"
+    });return;
+  }
+  if(roomName.split('').length>20){
+    ctx.$message({
+      message:"房间名称太长啦~",
+      type:"warning"
+    });return;
+  }
   if(roomName!=""){
     ElMessageBox.confirm(`确定创建【${roomName}】?`,"", {
         confirmButtonText: "确定",
@@ -137,29 +139,10 @@ const createRoomHandle = ()=>{
         }
       });
     }).catch(()=>{});
-  }else{
-    ctx.$message({
-      message:"房间名称不为空",
-      type:"error"
-    });
   }
 }
 
-
-
 const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(3,7);
-
-// const list = [];
-// for(let i=0;i<30;i++){
-//   list.push({
-//     rid:ID(),
-//     name:"房间"+i,
-//     state:Math.random()>0.2,
-//     description:ID(),
-//     stats:3,
-//     limit:10
-//   });
-// }
 
 function check(str,max=5){
     return str.length>max?`${str.substr(0,max)}...`:str;
@@ -189,27 +172,6 @@ onMounted(() => {
   lock.value = true;
 });
 
-// const result = {
-//   event:"list",
-//   state:200,
-//   data:[
-//     {
-//       rid:"xxx",
-//       name:"xxx",
-//       state:"xxx",
-//       description:"xxx",
-//       stats:233,
-//       limit:10
-//     },{
-//       rid:"xxx",
-//       name:"xxx",
-//       state:"xxx",
-//       description:"xxx",
-//       stats:233,
-//       limit:10
-//     }
-//   ]
-// }
 
 </script>
 

@@ -40,6 +40,7 @@ socket.on("asset", (res={}) => {
 
 const disconnect = throttle(()=>{
   ctx.$log({message:"连接断开",type:"error"});
+  setAllow(true);
   router.push({name:"index"});
 },300);
 
@@ -64,15 +65,15 @@ socket.on("redirect", (res={}) => {
 
 const height = computed(()=>store.state.window.innerHeight+"px");
 
-const {innerWidth,innerHeight} = window;
+const {availWidth,availHeight} = window;
 
 const resize = ()=>{
-  if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-    store.commit("setWindow",{innerWidth,innerHeight});
-  } else if (/(Android)/i.test(navigator.userAgent)) {
-    store.commit("setWindow",{innerWidth,innerHeight});
+  if (/(iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+    store.commit("setWindow",{innerWidth:availWidth,innerHeight:availHeight});
+  } else if (/(iPhone|Android)/i.test(navigator.userAgent)) {
+    store.commit("setWindow",{innerWidth:availWidth,innerHeight:availHeight});
   } else {
-    store.commit("setWindow",{innerWidth,innerHeight});
+    store.commit("setWindow",window);
   }
   // store.commit("setWindow",window);
 };
@@ -84,9 +85,7 @@ const resize = ()=>{
 
 
 onMounted(()=>{
-  if(window.innerWidth>1200){
-    window.addEventListener("resize",resize);
-  }
+  window.addEventListener("resize",resize);
 })
 
 onUnmounted(()=>{
