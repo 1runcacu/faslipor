@@ -152,6 +152,35 @@ public class MessageEventHandler {
            log.info(JSONObject.toJSONString(myRe));
            client.sendEvent("stream",myRe);
        }
+       if(data0.get("event").equals("redo")){
+           log.info("redo");
+            String uid = socketIOClientMap1.get(client);
+            House myHouse=redisService.get(uid+"Room",House.class);
+            if(redoAllMap.get(myHouse.rid)==null) return;
+            if(redoAllMap.get(myHouse.rid).size()==0) return;
+            Map<String,JSONObject> elem=redoAllMap.get(myHouse.rid).pop();
+            Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myHouse.rid);
+            if(myStack==null) myStack=new Stack<>();
+            myStack.push(elem);
+            historyAllMap.put(myHouse.rid,myStack); //可不加
+            Refresh  myRefresh=new Refresh();
+            myRefresh.uid=uid;
+            myRefresh.rid=myHouse.rid;
+
+                nowAllMap.put(myHouse.rid,(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek()));
+                myRefresh.frame=(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek());
+                log.info("栈的顶部，即当前应该显示的内容"+JSONObject.toJSONString(historyAllMap.get(myHouse.rid).peek()));
+
+            List<JSONObject> nameList=redisService.get(myHouse.rid+"nameList",List.class);
+            List<JSONObject> nameList0 = new ArrayList(nameList);
+            for(JSONObject cur:nameList0){ //uid
+                NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+                log.info(u.uid);
+                myRefresh.uid=u.uid;
+                log.info("向房间里所有人发送的内容"+JSONObject.toJSONString(myRefresh));
+                socketIOClientMap.get(u.uid).sendEvent("stream",myRefresh);
+            }
+       }
        if(data0.get("event").equals("undo")){
            log.info("undo");
            String uid = socketIOClientMap1.get(client);
