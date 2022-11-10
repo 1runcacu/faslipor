@@ -93,10 +93,7 @@ import vueConsoleVue from '@/components/vue-console.vue';
 import vueOpener from '@/components/vue-opener.vue'
 import vueEditVue from '@/components/vue-edit.vue';
 import { useStore } from 'vuex';
-import {throttle,shakeProof,fireKeyEvent} from "@/api/util";
-import { padEnd } from 'lodash';
-
-const graphMap = {};
+import {throttle,shakeProof} from "@/api/util";
 
 const socket = inject("socket");
 const store = useStore();
@@ -244,84 +241,64 @@ const modified = shakeProof((frame,syn=false)=>{
 
 const BUFFER = ref(null);
 
-let defLine = false;
-let stroke = false;
-let LineId = null;
+let SID;
+let MODE;
+let path = [];
+let SBOX = {
+    mx:null,
+    my:null,
+    Mx:null,
+    My:null
+};
 
 const makeShape = item=>{
     const {label} = item;
-    const style = { top:100,left:200,width: 50, height: 50,fill:"gray",stroke:"gray" ,radius:50,gid:ID(),date:Date.now()};
-    let create = null;
     switch(label){
         case "直线":
-            create = {
-                type:"Line",
-                params:[[10, 10, 100, 100],style]
-            };
-            break;
+            MODE = 0;break;
+        case "曲线":
+            MODE = 1;break;
         case "编辑":
-            zindex.value = 2;
+            MODE = 2;break;
             return;
         case "三角形":
-            create = {
-                type:"Triangle",
-                params:[
-                    style
-                ]
-            };
+            MODE = 3;
             break;
         case "椭圆形":
-            create = {
-                type:"Circle",
-                params:[
-                    style
-                ]
-            };
+            MODE = 4;
             break;
         case "矩形":
-            create = {
-                type:"Rect",
-                params:[
-                    style
-                ]
-            };
+            MODE = 5;
             break;
         case "文字":
-            create = {
-                type:"IText",
-                params:[
-                    'TEXT',
-                    style
-                ]
-            };
+            MODE = 6;
             break;
+        default:return;
     }
-    if(!create){
-        return;
-    }
-    const graph = new fabric[create.type](...create.params);
-    if(graph){
-        // after:render：画布重绘后
-        // object:selected：对象被选中
-        // object:moving：对象移动
-        // object:rotating：对象被旋转
-        // object:added：对象被加入
-        // object:removed：对象被移除
-        try{
-            // const {room:{rid},user:{uid}} = config.value;
-            // socket.emit("stream",{
-            //     event:"increment",
-            //     rid,uid,
-            //     frame
-            // });
-            const pixel = graph.toJSON(["gid","date"])
-            modified({
-                type:"创建",
-                pixel
-            });
-            addPixel(pixel);
-        }catch(err){}
-    }
+    SID = ID();
+    path = [];
+    zindex.value = 2;
+    toolShow.value=false;
+    SBOX = {
+        mx:null,
+        my:null,
+        Mx:null,
+        My:null
+    };
+    // if(!create){
+    //     return;
+    // }
+    // const graph = new fabric[create.type](...create.params);
+    // if(graph){
+    //     try{
+    //         const pixel = graph.toJSON(["gid","date"])
+    //         modified({
+    //             type:"创建",
+    //             pixel
+    //         });
+    //         addPixel(pixel);
+    //     }catch(err){}
+    // }
 }
 
 const makeAct = item=>{
@@ -350,8 +327,6 @@ const makeAct = item=>{
         rid,uid
     });
 }
-
-let editing = false;
 
 function addPixel(...args){
     fabric.util.enlivenObjects(args, function(objects) {
@@ -420,15 +395,15 @@ var pencil;
 var edit = ref(null);
 
 const EditBox = ref({
-    lineWidth:"1.1",
-    fontSize:"1.2",
+    lineWidth:2,
+    fontSize:2,
     fontColor:"#234567"
 });
 
 const send = shakeProof(()=>sendCanvas(),30);
 
 function init() {
-    canvas = new fabric.Canvas('canvas'); // 实例化fabric，并绑定到canvas元素上
+    canvas = new fabric.Canvas('canvas');
     pencil = new fabric.Canvas('pencil');
     let panning = false;
     
@@ -449,11 +424,13 @@ function init() {
     canvas.on('mouse:up', function(options) {
         // send();
         panning = false;
-        editing = false;
         previousTouch = null;
     });
     // 鼠标移动时
     canvas.on('mouse:move', function(options) {
+        // previousTouch = previousTouch?previousTouch:canvas.getPointer(options.e);
+        // let now = canvas.getPointer(options.e);
+        // let [dx,dy] = [now.x - previousTouch.x,now.y - previousTouch.y];
         if (panning && options && options.e) {
             if(options.e.movementX!=undefined&&options.e.movementY!=undefined){
 
@@ -478,13 +455,95 @@ function init() {
         // send();
     });
 
+    pencil._onMouseMoveInDrawingMode = function(e) {
+      if (pencil._isCurrentlyDrawing) {
+        var pointer = pencil.getPointer(e);
+        pencil.freeDrawingBrush.onMouseMove(pointer, { e: e, pointer: pointer });
+        path.push(["Q",pointer.x,pointer.y]);
+        if(SBOX.mx!=null){
+            SBOX.mx = Math.min(SBOX.mx,pointer.x);
+        }else{ SBOX.mx = pointer.x;}
+        if(SBOX.my!=null){
+            SBOX.my = Math.min(SBOX.my,pointer.y);
+        }else{ SBOX.my = pointer.y;}
+        if(SBOX.Mx!=null){
+            SBOX.Mx = Math.max(SBOX.Mx,pointer.x);
+        }else{ SBOX.Mx = pointer.x;}
+        if(SBOX.My!=null){
+            SBOX.My = Math.max(SBOX.My,pointer.y);
+        }else{ SBOX.My = pointer.y;}
+        path[0][0] = "M";
+        path[path.length-1][0] = "L";
+        let OBJ = new fabric.Path(path,{
+            stroke:"pink",
+            backgroundColor:"",
+            strokeWidth:3,
+            fillRule:"nonzero",
+            fill:null,
+            gid:SID,
+            date:Date.now()
+        });
+        
+        modified({
+            type:"编辑",
+            pixel:OBJ.toJSON(["gid","date"])
+        });
+      }
+      pencil.setCursor(pencil.freeDrawingCursor);
+      pencil._handleEvent(e, 'move');
+    }
+
     pencil.on('mouse:up', function(options) {
+        let {lineWidth,fontSize,fontColor} = EditBox.value;
+        toolShow.value=true;
         zindex.value = 0;
         let obj = pencil.getObjects()[0];
         let json = obj.toJSON();
         pencil.clear();
-        json.gid = ID();
+        let c = json.path.pop();
+        let width = 50,height = 50,left = 0,top = 0,radius=50;
+        if(fontSize==null)fontSize = 1.3;
+        if(fontColor=="")fontColor = "pink";
+        if(lineWidth==null)lineWidth = 1.3;
+        if(SBOX.Mx!=undefined&&SBOX.My!=undefined&&SBOX.mx!=undefined&&SBOX.my!=undefined){
+            left = SBOX.mx;top = SBOX.my;
+            width = SBOX.Mx - SBOX.mx;
+            height = SBOX.My - SBOX.my;
+            radius = ~~(Math.min(height,width)/2);
+        }
+        const style = { 
+            top,left,width, height,fill:fontColor,radius,
+        }
+        switch(MODE){
+            case 0:
+                json.path.length = 1;
+                json.path.push(c);
+                break;
+            case 1:
+                let len = json.path.length;
+                let a = json.path[Math.floor(len/3)];
+                let b = json.path[Math.floor(len*2/3)];
+                json.path.length = 1;
+                json.path.push(["C",a[1],a[2],b[1],b[2],c[1],c[2]]);
+            case 2:break;
+            case 3:
+                json = new fabric.Triangle(style).toJSON();
+                break;
+            case 4:
+                json = new fabric.Circle(style).toJSON();
+                break;
+            case 5:
+                json = new fabric.Rect(style).toJSON();
+                break;
+            case 6:
+                json = new fabric.IText('TEXT',{top,left,width, height,fill:fontColor}).toJSON();
+                break;
+            default:return;
+        }
+        json.gid = SID;
         json.date = Date.now();
+        json.strokeWidth = lineWidth;
+        json.stroke = fontColor;
         addPixel(json);
         modified({
             type:"添加",
@@ -549,18 +608,6 @@ function init() {
     pencil.freeDrawingBrush.color = 'pink';
     pencil.isDrawingMode = 1; 
 
-
-    
-    // var brush = new fabric.PencilBrush(canvas);
-    // canvas._onMouseMoveInDrawingMode = function (e) {
-    //     var pointer = canvas.getPointer(e);
-    //     // pointer.x = 100;
-    //     // console.log(canvas.freeDrawingBrush.toJSON());    
-    //     // brush.onMouseDown({x:pointer.x, y:pointer.y});  
-    //     // brush.onMouseDown({x:10,y:20});  
-    //     // return false;
-    //     console.log(canvas.toJSON(["gid","date"]));
-    // }
     canvas.setWidth(window.innerWidth);
     canvas.setHeight(window.innerHeight);
     pencil.setWidth(window.innerWidth);
@@ -589,7 +636,7 @@ onMounted(() => {
     refresh();
     document.onkeydown=function(event){
         event = event|| window.event;
-        console.log(event.keyCode );
+        // console.log(event.keyCode );
    }
 });
 
