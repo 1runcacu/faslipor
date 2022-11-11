@@ -10,6 +10,9 @@ public class Param {
     public String description;
     public House room;
     public User user;
+    //成员列表
+    public List<User> userList;
+    public List<Layout> layouts;
     public List<House> list;
     public Result result;
     public Param(){
