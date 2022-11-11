@@ -21,6 +21,7 @@ const rooms = {};
 const roomsUsers = {};
 const roomBuffer = {};
 const actionBuffer = {};
+const layoutBuffer = {};
 
 const sockets = {};
 
@@ -48,9 +49,10 @@ function reqlist(socket,data=[]){
 function createRoom(socket,params){
   const rid = ID();
   const uid = ID();
+  const lid = ID();
   const {roomName,description} = params;
   const room = {
-    rid,
+    rid,lid,
     name:roomName,
     description,
     state:true,
@@ -67,10 +69,18 @@ function createRoom(socket,params){
   }
   const data = {
     room,
-    user
+    user,
+    layout:[{lid,name:"Sheet"}]
   };
   rooms[rid] = room;
   roomBuffer[rid] = {};
+  roomBuffer[rid][lid] = {};
+  actionBuffer[rid] = {};
+  actionBuffer[rid][lid] = {};
+  layoutBuffer[rid] = [];
+  layoutBuffer[rid].push({
+    lid,name:"Sheet"
+  });
   users[uid] = user;
   goto(socket,`/panel`,data);
 }
@@ -90,7 +100,8 @@ function enterRoom(socket,params){
   });
   const data = {
     room,
-    user
+    user,
+    layout:layoutBuffer[rid]
   };
   goto(socket,`/panel`,data);
 }
@@ -106,6 +117,7 @@ function exitRoom(socket,params){
     delete rooms[rid];
     delete roomsUsers[rid];
     delete roomBuffer[rid];
+    delete actionBuffer[rid];
   }
   goto(socket,"/",{});
 }
@@ -136,17 +148,43 @@ function broadCastRoomUsers(rid,data){
   })
 }
 
-function record(rid,uid,frame){
-  if(!roomBuffer[rid])roomBuffer[rid]={};
-  const buf = roomBuffer[rid];
-
-  const {pixel:{gid,date}} = frame;
-  if(buf[gid]){
-    if(buf[gid].date<date){
+function record(rid,lid,uid,frame){
+  if(!roomBuffer[rid])roomBuffer[rid]={};if(!roomBuffer[rid][lid])roomBuffer[rid][lid]={};
+  if(!actionBuffer[rid])actionBuffer[rid]={};if(!actionBuffer[rid][lid])actionBuffer[rid][lid]={};
+  const buf = roomBuffer[rid][lid];
+  const act = actionBuffer[rid][lid];
+  const {type,pixel:{gid,date}} = frame;
+  if(act[gid]){
+    if(act[gid].type=="删除"){
+      return {
+        rid,lid,uid,event:"edit",
+        frame:{type:"删除",pixel:{
+          gid
+        }}
+      }
+    }
+    if(act[gid].date<date){
       buf[gid] = frame.pixel;
+      act[gid] = {
+        type,date
+      }
     }
   }else{
     buf[gid] = frame.pixel;
+    act[gid] = {
+      type,date
+    }
+  }
+  if(type=="删除"){
+    delete buf[gid];
+    return {
+      rid,lid,uid,event:"edit",
+      frame:{type,pixel:{gid}}
+    };
+  }
+  return {
+    rid,lid,uid,event:"edit",
+    frame:{type,pixel:buf[gid]}
   }
 }
 
@@ -173,9 +211,9 @@ io.on('connection',(socket) => {
         switch(event){
           case "increment"://broadCastRoomUsers(rid,data);break;
           case "all":broadCastRoomUsers(rid,data);break;
-          case "edit":record(rid,uid,frame);broadCastRoomUsers(rid,roomBuffer[rid][frame.pixel.gid]);break;
+          case "edit":broadCastRoomUsers(rid,record(rid,lid,uid,frame));break;
           case "refresh":broadCastRoomUsers(rid,{
-            event,rid,uid,lid,frame:roomBuffer[rid]
+            event,rid,uid,lid,frame:roomBuffer[rid][lid]
           });break;
         }
       }catch(err){}

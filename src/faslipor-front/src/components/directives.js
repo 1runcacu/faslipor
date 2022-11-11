@@ -278,6 +278,24 @@ const directives = {
         })
       }
     })()
+  },
+  dbclick2:{
+    mounted:(()=>{
+      let flag = 0;
+      return function(el,binding){
+        el.addEventListener("click",()=>{
+          flag++;
+          setTimeout(() => {
+            flag = 0;
+          }, 500);
+          if(flag==2){
+            try{
+              binding.value();
+            }catch(err){}
+          }
+        })
+      }
+    })()
   }
 };
 

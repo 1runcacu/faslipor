@@ -1,7 +1,6 @@
 <template>
   <div id="box">
-    <div id="card">
-      <el-input
+    <el-input
         v-model="search"
         class="w-50 m-2"
         size="large"
@@ -9,6 +8,7 @@
         :suffix-icon="Search"
         style="width: 300px;"
       />
+    <div id="card">
       <div id="rooms">
         <el-card :body-style="{ height: '100%' }" v-for="(item,index) in rooms" :class="{disabled:!item.state||(item.stats>=item.limit)}" :key="index" :disabled="!item.state||(item.stats>=item.limit)">
           <template #header>
@@ -220,6 +220,10 @@ onMounted(() => {
   align-items: center;
   height: 100%;
 }
+#box>.el-input{
+  margin-top: 50px;
+  margin-bottom: -80px;
+}
 #card{
   height: 100%;
   /* width: calc(100% - 600px); */
@@ -231,7 +235,6 @@ onMounted(() => {
   padding: 20px;
   overflow: hidden;
 }
-
 .el-card{
   page-break-inside:avoid;
   -webkit-column-break-inside: avoid;

@@ -27,7 +27,7 @@
             </div>
         </div>
         <vueOpener :toolShow="toolShow" @open="openHandle">
-            <el-collapse v-model="activeNames" @change="handleChange">
+            <el-collapse v-model="activeNames">
             <el-collapse-item title="工程" name="0">
                 <div class="icons">
                     <img v-for="item in toolsConfig.project" :src="item.src" v-click2="()=>makeAct(item)"/>
@@ -35,19 +35,25 @@
             </el-collapse-item>
             <el-collapse-item title="图层" name="1">
                 <div class="input">
-                    <select v-model="value" size="2" class="block">
-                        <option
-                            v-for="item in options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        />
-                    </select>
-                    <input placeholder="图层名称"/>
+                    <div class="ipt-name">
+                        <select v-model="layoutID" class="block" @change="LChangeHandle">
+                            <option
+                                v-for="item in config.layout"
+                                :key="item.lid"
+                                :label="item.name"
+                                :value="item.lid"
+                            />
+                        </select>
+                        <el-button type="danger" :icon="Delete" @click="delLayout" circle/>
+                    </div>
+                    <div class="ipt-name">
+                        <input placeholder="请输入图层名称" v-model="Lyname"/>
+                        <el-button type="success" :icon="Check" circle :disabled="nameUseable" @click="catLayout"/>
+                    </div>
                 </div>
-                <div class="icons">
-                    <img v-for="item in toolsConfig.layout" :src="item.src" />
-                </div>
+                <!-- <div class="icons">
+                    <img v-for="item in toolsConfig.layout" :src="item.src" v-click2="()=>makeAct(item)"/>
+                </div> -->
             </el-collapse-item>
             <el-collapse-item title="形状" name="2">
                 <div class="icons">
@@ -73,6 +79,7 @@
             </el-collapse>
         </vueOpener>
         <vueEditVue @KD="kd" ref="edit"
+            @edit="editHandle"
             v-model:lineWidth="EditBox.lineWidth"
             v-model:fontSize="EditBox.fontSize"
             v-model:fontColor="EditBox.fontColor"
@@ -84,7 +91,7 @@
 
 <script setup>
 import { ElPageHeader,ElCollapse,ElCollapseItem} from 'element-plus';
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft,Check,Refresh,Delete } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { inject, ref,computed,onBeforeUnmount,getCurrentInstance } from 'vue';
 import { onMounted } from 'vue'
@@ -97,13 +104,15 @@ import {throttle,shakeProof} from "@/api/util";
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 
+console.log(ctx);
+
 const socket = inject("socket");
 const store = useStore();
 const router = useRouter();
 
 let FIRST = true;
 
-var config = computed(()=>store.state.params||{room:{},user:{}});
+var config = computed(()=>store.state.params||{room:{},user:{},layout:[]});
 
 const onBack = () => {
     try{
@@ -113,25 +122,47 @@ const onBack = () => {
     }
 }
 
-const zindex = ref(0);
+const Lyname = ref("Sheet");
+const layoutID = ref(null);
+const nameUseable = computed(()=>{
+    if(Lyname.value.length===0){
+        return true;
+    }
+    if(Lyname.value.length>10){
+        return true;
+    }
+    return false;
+});
+const LChangeHandle = ()=>{
+    Lyname.value&&setLayout(layoutID.value);
+}
+const delLayout = ()=>{
+    let lid = layoutID.value;
+    let name = config.layout.find(v=>v.lid===lid).name||"";
+    if(!name)return;
+    window.confirm(`确定删除图层[${name}]`,"", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+    }).then(v=>{
+        setLayout(layoutID.value,"删除");
+    }).catch(()=>{});
+}
+const catLayout = ()=>{
+    let name = Lyname.value;
+    let lot = config.layout.find(v=>v.name===name);
+    let hint = "创建";
+    if(lot){
+        hint = "切换"
+    }
+    window.confirm(`确定${hint}图层[${name}]`,"", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+    }).then(v=>{
+        setLayout(layoutID.value,hint,name);
+    }).catch(()=>{});
+};
 
-const value = ref();
-const options = ref([{
-    value:1,
-    label:1
-},{
-    value:2,
-    label:2
-},{
-    value:3,
-    label:3
-},{
-    value:4,
-    label:4
-},{
-    value:5,
-    label:5
-}]);
+const zindex = ref(0);
 
 const toolsConfig = ref({
     project:[{
@@ -151,6 +182,9 @@ const toolsConfig = ref({
         label:"重做"
     }],
     layout:[{
+        src:require("../assets/icon/刷新.png"),
+        label:"刷新"
+    },{
         src:require("../assets/icon/添加.png"),
         label:"添加"
     },{
@@ -202,10 +236,41 @@ const kd = (v,state=false)=>{
     }
 }
 
-const activeNames = ref(['2'])
-const handleChange = (val) => {
-//   console.log(val)
+const editHandle =(e,data)=>{
+    let actObj = canvas.getActiveObject();
+    switch(e){
+        case "放大":
+            break;
+        case "缩小":
+            break;
+        case "复制":
+            break;
+        case "撤销":
+            break;
+        case "重做":
+            break;
+        case "删除":
+            if(actObj){
+                let pixel = actObj.toJSON(["gid","date"]);
+                pixel.date = Date.now();
+                canvas.remove(actObj);
+                modified({
+                    type:"删除",pixel
+                },true);
+            }else{
+                ctx.$message({
+                    message:"当前未选中图元喔~",
+                    type:"warning"
+                });
+            }
+            break;
+        case "保存":
+            break;
+    }
 }
+
+const activeNames = ref(['1']);
+
 const toolShow = ref(true);
 
 const toolsHandle = () => {
@@ -221,33 +286,37 @@ const consoleHandle = (val)=>{
     consoleShow.value = false;
 }
 
-const ID = ()=>Date.now().toString(36);
+const layoutHandle = (v)=>{
+    console.log(layoutID.value)
+}
+
+var ID = ()=>Date.now().toString(36);
 
 function sendCanvas(){
-    const {room:{rid},user:{uid}} = config.value;
+    const {room:{rid,lid},user:{uid}} = config.value;
     socket.emit("stream",{
         event:"all",
-        rid,uid,
+        rid,uid,lid,
         frame:JSON.stringify(canvas.toJSON())
     });
 }
 
 
-const modified = shakeProof((frame,syn=false)=>{
-    const {room:{rid},user:{uid}} = config.value;
+var modified = shakeProof((frame,syn=false)=>{
+    const {room:{rid,lid},user:{uid}} = config.value;
     socket.emit("stream",{
         event:"edit",
-        rid,uid,syn,
+        rid,uid,lid,syn,
         frame
     });
 },2);
 
-const BUFFER = ref(null);
+var BUFFER = ref(null);
 
-let SID;
-let MODE;
-let path = [];
-let SBOX = {
+var SID;
+var MODE;
+var path = [];
+var SBOX = {
     mx:null,
     my:null,
     Mx:null,
@@ -311,9 +380,9 @@ const makeShape = item=>{
     // }
 }
 
-const makeAct = item=>{
-    const {label} = item;
-    const {room:{rid},user:{uid}} = config.value;
+const makeAct = (item)=>{
+    let {label} = item;
+    let {room:{rid,lid},user:{uid}} = config.value;
     let event = "error";
     switch(label){
         case "保存":
@@ -330,6 +399,13 @@ const makeAct = item=>{
             break;
         case "重做":
             event="redo"
+            break;
+        case "刷新":
+            refresh();
+            return;
+        case "添加":
+            break;
+        case "删除":
             break;
     }
     socket.emit("stream",{
@@ -378,7 +454,9 @@ function addPixel(...args){
 
 const stream = data=>{
     try{
-        const {rid,uid,event,frame} = data;
+        const {rid,lid,uid,event,frame} = data;
+        config.value.user.lid = lid;
+        layoutID.value = lid;
         if(event!=="refresh"&&uid === config.value.user.uid){
             return;
         }
@@ -393,20 +471,28 @@ const stream = data=>{
                 break;
             case "edit":
                 const Objs = canvas.getObjects();
-                const {pixel} = frame;
+                const {type,pixel} = frame;
                 if(!Objs.find(v=>{
                     if(v.gid===pixel.gid){
                         canvas.remove(v);
+                        if(type!="删除"){
+                            addPixel(pixel);
+                        }
+                    }
+                    return v.gid===pixel.gid;
+                })){
+                    if(type!="删除"){
                         addPixel(pixel);
                     }
-                    return v.gid===pixel.gid
-                })){
-                    addPixel(pixel);
                 }
                 break;
             case "refresh":
                 canvas.clear();
                 addPixel(...Object.values(frame));
+                ctx.$log({
+                    type:"success",
+                    message:"刷新成功"
+                });
                 break;
         }
     }catch(err){console.log(err)};
@@ -559,8 +645,7 @@ function init() {
                 json = new fabric.Rect(style).toJSON();
                 break;
             case 6:
-                json = new fabric.IText('TEXT',{top,left,width, height,fill:fontColor}).toJSON();
-                console.log(new fabric.IText('TEXT',{top,left,width, height,fill:fontColor}));
+                json = new fabric.IText('TEXT',{top,left,width,height,fontSize:height}).toJSON();
                 break;
             default:return;
         }
@@ -647,13 +732,34 @@ function init() {
 }
 
 function refresh(){
-    const {room:{rid},user:{uid}} = config.value;
+    const {room:{rid,lid},user:{uid}} = config.value;
     socket.emit("stream",{
         event:"refresh",
-        rid,uid
+        rid,uid,lid,
+        frame:{}
     });
 }
-
+function setLayout(lid,type="切换",name){
+    const {room:{rid},user:{uid}} = config.value;
+    switch(type){
+        case "删除":
+            socket.emit("stream",{
+                event:"refresh",
+                rid,uid,lid,
+                frame:{
+                    type:"删除"
+                }
+            });
+            return;
+    }
+    socket.emit("stream",{
+        event:"refresh",
+        rid,uid,lid,
+        frame:{
+            type,name
+        }
+    });
+}
 
 onMounted(() => {
     init();
@@ -751,15 +857,54 @@ onBeforeUnmount(()=>{
     flex-direction: column;
     align-items: stretch;
 }
-.input>input{
-    margin-top: 5px;
+
+.ipt-name>input{
+    width: calc(100% - 60px);
     border: 1px solid gray;
-    border-radius: 3px;
-    background-color: rgba(255, 255, 255, 0.9);;
+    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 3px;
 }
-.input>select{
-    height: 100px;
+.ipt-name>select{
+    width: calc(100% - 52px);
+    border: 1px solid gray;
+    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 3px;
+}
+
+.ipt-name>.el-button{
+    width: 25px;
+    height: 25px;
+    margin-left: 10px;
+}
+.act-btn>.el-button{
+    width: calc(100% - 20px);
+    height: 30px;
+}
+.ipt-name{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 50px;
+    overflow: hidden;
+}
+.act-btn{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 50px;
+    overflow: hidden;
+}
+
+/* .input>select{
     background-color: rgba(255, 255, 255, 0.2);
-}
+    border-radius: 5px;
+    padding: 3px;
+    width: calc(100% - 53px);
+    margin-left: 10px;
+} */
 
 </style>
