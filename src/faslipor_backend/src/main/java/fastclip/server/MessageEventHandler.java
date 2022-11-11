@@ -9,6 +9,7 @@ import com.corundumstudio.socketio.annotation.OnConnect;
 import com.corundumstudio.socketio.annotation.OnDisconnect;
 import com.corundumstudio.socketio.annotation.OnEvent;
 import fastclip.Service.QueryService;
+import fastclip.Service.StreamService;
 import fastclip.domain.*;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,9 @@ public class MessageEventHandler {
     @Autowired
     private QueryService queryService;
 
+    @Autowired
+    private StreamService streamService;
+
     public static Set<SocketIOClient> socketIOClientSet = new HashSet<>();
 
     public static Map<String,SocketIOClient> socketIOClientMap = new ConcurrentHashMap<>();
@@ -71,6 +75,7 @@ public class MessageEventHandler {
     @OnEvent(value = "query")
     public void onQuery(SocketIOClient client, AckRequest request, Query data) {
           log.info("query");
+          log.info(""+data);
           if(data.event.equals("add"))
         { log.info("add");
             client.sendEvent("redirect", queryService.addRoom(client,data.params.roomName,data.params.description));
@@ -103,40 +108,10 @@ public class MessageEventHandler {
     @OnEvent(value="stream")
     public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException, IOException {
        log.info("stream");
-       log.info(JSON.toJSONString(data0));
+       log.info(""+data0);
        if(data0.get("event").equals("save")){
            log.info("save");
-           String uid = socketIOClientMap1.get(client);
-           House myRoom = redisService.get(uid + "Room", House.class);
-           if(!nowAllMap.containsKey(myRoom.rid)) return;
-           //部署时注意这里需要改
-           Message message=new Message();
-           message.type="info";
-           String filePath="/www/web/app/Room";
-           File dir=new File(filePath);
-           if(!dir.exists()){
-               dir.mkdirs();
-           }
-           File checkFile=new File(filePath+"/"+uid+".fsl");
-           FileWriter writer=null;
-           try{
-               if(!checkFile.exists()){
-                   checkFile.createNewFile();
-               }
-               writer=new FileWriter(checkFile,false);
-               writer.append(JSON.toJSONString(nowAllMap.get(myRoom.rid)));
-               writer.flush();
-           } catch (IOException e) {
-               e.printStackTrace();
-           }finally {
-               if(null!=writer)
-                   writer.close();
-           }
-           message.message="/Room"+"/"+uid+".fsl";
-           log.info(JSON.toJSONString(message));
-           /*/localhost:8101/Room/360689.fsl
-           * */
-           client.sendEvent("message",message);
+           client.sendEvent("message",streamService.save(client,request,data0));
        }
        if(data0.get("event").equals("refresh")) {
            log.info("refresh");
@@ -222,27 +197,6 @@ public class MessageEventHandler {
            }
 
        }
-       if(data0.get("event").equals("all")) {
-          log.info("all");
-       }
-       if(data0.get("event").equals("increment")){
-         //  Long dataNext=Long.valueOf(JSON.parseObject(data0.get("frame").toString()).get("params").toString()     toString());
-           log.info("increment");
-           List<JSONObject> nameList=redisService.get(data0.get("rid")+"nameList",List.class);
-           List<JSONObject> nameList0 = new ArrayList(nameList);
-         //  Istream myData=new Istream();
-          // pre=Long.valueOf(myData.frame.pixel.get("date").toString());
-           for(JSONObject cur:nameList0){ //uid
-               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
-               if(!u.uid.equals(data0.get("rid"))){
-                   log.info(u.uid);
-                   log.info(JSON.toJSONString(data0));
-                   socketIOClientMap.get(u.uid).sendEvent("stream",data0);
-               }
-           }
-           flag=true;
-       }
-
        if(data0.get("event").equals("edit")){
            log.info("edit");
            Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
@@ -274,10 +228,19 @@ public class MessageEventHandler {
            //log.info(all.toString());
            //这里需要缓存之前的gid
            boolean f=true;
+           if(all.containsKey(myData.frame.pixel.get("gid").toString())&&all.get(myData.frame.pixel.get("gid").toString())==null){
+               //已经被删除
+               return;
+           }
+           if(myData.frame.type.equals("删除")){
+               all.put(myData.frame.pixel.get("gid").toString(),null);
+           }else{
+               all.put(myData.frame.pixel.get("gid").toString(),myData.frame.pixel);
+           }
+
            if(all.get(myData.frame.pixel.get("gid").toString())!=null&&!myData.syn){
                f=false;
            }
-           all.put(myData.frame.pixel.get("gid").toString(),myData.frame.pixel);
            Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myData.rid);
            log.info(JSONObject.toJSONString(myStack));
            if(myStack==null)//该房间还未有历史记录
@@ -289,7 +252,7 @@ public class MessageEventHandler {
                log.info("当前的历史记录"+myStack);
                Map<String,JSONObject> all0=new HashMap<>();
                ObjectMapper objectMapper=new ObjectMapper();
-               all0=objectMapper.readValue(objectMapper.writeValueAsString(all),Map.class);
+               all0=objectMapper.readValue(objectMapper.writeValueAsString(all),Map.class); //历史记录相当于无这个pixel
                myStack.push(all0);
                log.info("加入后的历史记录1"+myStack);
                log.info("加入后的历史记录大小1 "+String.valueOf(historyAllMap.get(myData.rid).size()));
@@ -303,7 +266,7 @@ public class MessageEventHandler {
           for(JSONObject cur:nameList0){ //uid
               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
               //Thread.sleep(1000);
-              if(!u.uid.equals(data.uid)){
+              if(!u.uid.equals(myData.uid)){
                   log.info(u.uid);
                   log.info(JSON.toJSONString(myData));
                   socketIOClientMap.get(u.uid).sendEvent("stream",myData);
