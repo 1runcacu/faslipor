@@ -21,6 +21,11 @@ function changeDevice(e){
   return e; 
 }
 
+let MODE = 1;
+
+export function setMODE(v=0){
+  MODE = v;
+}
 
 const directives = {
   drag: {
@@ -253,14 +258,22 @@ const directives = {
       let flag = 0;
       return function(el,binding){
         el.addEventListener("click",()=>{
-          flag++;
-          setTimeout(() => {
-            flag = 0;
-          }, 500);
-          if(flag==2){
-            try{
-              binding.value();
-            }catch(err){}
+          switch(MODE){
+            case 0:
+              flag++;
+              setTimeout(() => {
+                flag = 0;
+              }, 500);
+              if(flag==2){
+                try{
+                  binding.value();
+                }catch(err){}
+              }
+              break;
+            default:
+              try{
+                binding.value();
+              }catch(err){}
           }
         })
       }

@@ -83,10 +83,10 @@
 
 
 <script setup>
-import { ElPageHeader,ElCollapse,ElCollapseItem,ElMessageBox} from 'element-plus';
+import { ElPageHeader,ElCollapse,ElCollapseItem} from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { inject, ref,computed,onBeforeUnmount } from 'vue';
+import { inject, ref,computed,onBeforeUnmount,getCurrentInstance } from 'vue';
 import { onMounted } from 'vue'
 import { fabric } from 'fabric'
 import vueConsoleVue from '@/components/vue-console.vue';
@@ -95,9 +95,13 @@ import vueEditVue from '@/components/vue-edit.vue';
 import { useStore } from 'vuex';
 import {throttle,shakeProof} from "@/api/util";
 
+const ctx = getCurrentInstance().appContext.config.globalProperties;
+
 const socket = inject("socket");
 const store = useStore();
 const router = useRouter();
+
+let FIRST = true;
 
 var config = computed(()=>store.state.params||{room:{},user:{}});
 
@@ -187,8 +191,7 @@ const kd = (v,state=false)=>{
             let obj = canvas.getActiveObject();
             if(obj&&obj.type==="i-text"){
                 obj.exitEditing();
-                canvas.remove(obj);
-                canvas.add(obj);
+                obj.selected=false;
             }
             zindex.value = 0;
             pencil.clear();
@@ -285,6 +288,13 @@ const makeShape = item=>{
         Mx:null,
         My:null
     };
+    if(FIRST){
+        ctx.$message({
+            message:"触碰画布构建图元~",
+            type:"success"
+        });
+        FIRST = false;
+    }
     // if(!create){
     //     return;
     // }
@@ -333,16 +343,29 @@ function addPixel(...args){
         var origRenderOnAddRemove = canvas.renderOnAddRemove;
         canvas.renderOnAddRemove = false;
         objects.forEach(function(o) {
+            if(o.type==="path"){
+                o.fill = null;
+            }
             canvas.add(o);
-            const editcall = option=>{
+            const editcall =(syn=false)=>{
                 o.date = Date.now();
                 modified({
                     type:"编辑",
-                    pixel:o.toJSON(["gid","date"])
+                    pixel:o.toJSON(["gid","date"]),
+                    syn
                 });
             };
             if(o.type==="i-text"){
-                o.onDeselect = editcall;
+                o.onDeselect = function(){
+                    this.isEditing&&this.exitEditing();
+                    this.selected=false;
+                    editcall(true);
+                };
+                let func = o.onInput.bind(o);
+                o.onInput = function(e){
+                    func(e);
+                    editcall(false);
+                }
             }
             o.on("moving",editcall);
             o.on("scaling",editcall);
@@ -537,6 +560,7 @@ function init() {
                 break;
             case 6:
                 json = new fabric.IText('TEXT',{top,left,width, height,fill:fontColor}).toJSON();
+                console.log(new fabric.IText('TEXT',{top,left,width, height,fill:fontColor}));
                 break;
             default:return;
         }
@@ -629,6 +653,7 @@ function refresh(){
         rid,uid
     });
 }
+
 
 onMounted(() => {
     init();
@@ -736,4 +761,5 @@ onBeforeUnmount(()=>{
     height: 100px;
     background-color: rgba(255, 255, 255, 0.2);
 }
+
 </style>
