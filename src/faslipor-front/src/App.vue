@@ -26,11 +26,13 @@ socket.on("message", (res={}) => {
 });
 
 socket.on("asset", (res={}) => {
-    console.log("asset:",res);
     const {event,state,data} = res;
     if(state===200){
       switch(event){
-        case "list":store.commit("setRooms",res.data);break;
+        case "list":store.commit("setRooms",res.data);console.log("asset:",res);break;
+        case "sync":
+          console.log(res.data);
+          store.commit("setParams",res.data);break;
         default:ctx.$message({message:"事件异常!!!",type:"error"});
       }
     }else{
