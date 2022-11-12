@@ -783,11 +783,13 @@ function init() {
 
 function refresh(){
     const {room:{rid},user:{uid,lid}} = config.value;
+    layoutID.value = lid;
+    console.log("refresh:",rid,uid,lid);
     socket.emit("stream",{
         event:"refresh",
         rid,uid,lid,
         frame:{}
-    });
+    });  
 }
 function setLayout(lid,type="切换",name){
     const {room:{rid},user:{uid}} = config.value;
@@ -826,6 +828,7 @@ onMounted(() => {
     init();
     socket.on("stream",stream);
     layoutID.value = config.value.user.lid;
+    console.log("config:",config.value);
     refresh();
     document.onkeydown=function(event){
         event = event|| window.event;
