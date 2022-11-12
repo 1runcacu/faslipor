@@ -1,3 +1,12 @@
+import axios from "axios";
+
+const AJAX = axios.create({
+    baseURL: "/",
+    timeout: 5000,
+    headers:{
+        'Content-Type': 'application/json'
+    }
+});
 // 函数节流
 export const throttle = function(fn, delay){
     var timer;
@@ -70,6 +79,20 @@ export function fireKeyEvent(el, evtType, keyCode){
 		evtObj.keyCode = keyCode;
 		el.fireEvent('on' + evtType, evtObj);
 	}
+}
+
+export function download(name,url){
+    // AJAX.get(url).then(v=>{
+    //     console.log(v);
+    // });    
+    // let url=URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.setAttribute("download",name);
+    a.setAttribute("href",url);
+    console.log(a);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    a.remove();
 }
 
 export default {

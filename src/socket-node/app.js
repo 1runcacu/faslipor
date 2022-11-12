@@ -5,17 +5,30 @@ const socketIO = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const fs = require('fs');
+const dlHost = `http://127.0.0.1:8099/static`;
 
 //redis
 //https://docs.redis.com/latest/rs/references/client_references/client_nodejs/
-
-app.use('/static',express.static(path.join(__dirname,'public')));
 
 const io = socketIO(server,{
     cors: {
         origin: '*'
     }
 });
+
+app.use('/static', express.static('./static'))
+
+function writeBinary(filename, buf, callback) {
+  const wstream = fs.createWriteStream(filename);
+  wstream.write(buf);
+  wstream.end();
+  wstream.on('finish', function() {
+    callback();
+  });
+  wstream.on('error', function(err) {
+    console.log(err);
+  });
+}
 
 const ID = ()=>Date.now().toString(36)+Math.random().toString(36).substr(2,8);
 
@@ -27,7 +40,7 @@ const roomBuffer = {};
 const actionBuffer = {};
 const layoutBuffer = {};
 const sockets = {};
-
+const MAXTIME = 60*1000*5;
 const mirror = {};
 
 const addr = path.normalize(__dirname + '/static');
@@ -157,6 +170,7 @@ function broadCastList(list){
 
 function broadCastRoomUsers(rid,data){
   const {lid} = data;
+  if(!lid)return;
   Object.values(roomsUsers[rid]).forEach(user=>{
     if(user.lid===lid){
       user.socket.emit("stream",data);
@@ -197,7 +211,8 @@ function broadCastAsset(rid,dlid){
 }
 
 function record(rid,lid,uid,frame,syn){
-  if(!roomBuffer[rid])roomBuffer[rid]={};if(!roomBuffer[rid][lid])roomBuffer[rid][lid]={};
+  if(!roomBuffer[rid])roomBuffer[rid]={};
+  if(!roomBuffer[rid][lid])return {};//roomBuffer[rid][lid]={};
   if(!actionBuffer[rid])actionBuffer[rid]={};if(!actionBuffer[rid][lid])actionBuffer[rid][lid]={};
   const buf = roomBuffer[rid][lid];
   const act = actionBuffer[rid][lid];
@@ -351,17 +366,31 @@ function redoapply(rid,lid){
   });
 }
 
+function download(socket,name,url="#"){
+  socket.emit("file",{
+    name,url
+  });
+}
+
 function screenSave(socket,rid,lid){
   const scshot = JSON.stringify({
     pixel:roomBuffer[rid][lid],
     action:actionBuffer[rid][lid]
   });
-  let {name} = layoutBuffer[rid][lid];
-  fs.writeFile(`${addr}/${name||"Sheet"}.txt`,scshot,{ flag: 'w' }, function (error){
+  let {name} = layoutBuffer[rid][lid]||"Sheet";
+  let fname = ID();
+  let url = `${dlHost}/${fname}.fsl`;
+  fs.writeFile(`${addr}/${fname}.fsl`,scshot,{ flag: 'w' }, function (error){
     if(error){
         console.log(error)
     }else{
-      message(socket,`/static/${name||"Sheet"}.fsl`,"info");
+      download(socket,`${name||"Sheet"}.fsl`,url);
+      setTimeout(() => {
+        fs.unlink(`${addr}/${fname}.fsl`,function(error){
+          
+        });
+      }, MAXTIME);
+      // message(socket,`/static/${name||"Sheet"}.fsl`,"info");
     }
   });
 }
@@ -446,6 +475,6 @@ io.on('connection',(socket) => {
     });
 });
 
-server.listen(8102,() => {
+server.listen(8099,() => {
     console.log("server is up and running on port 8102");
 });
