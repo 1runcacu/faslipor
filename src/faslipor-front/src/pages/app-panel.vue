@@ -36,7 +36,7 @@
             <el-collapse-item title="图层" name="1">
                 <div class="input">
                     <div class="ipt-name">
-                        <select v-model="layoutID" class="block" @change="LChangeHandle">
+                        <select v-model="config.user.lid" class="block" @change="LChangeHandle">
                             <option
                                 v-for="item in config.layout"
                                 :key="item.lid"
@@ -132,17 +132,17 @@ const nameUseable = computed(()=>{
     return false;
 });
 const LChangeHandle = ()=>{
-    Lyname.value&&setLayout(layoutID.value);
+    config.value.user.lid&&setLayout(config.value.user.lid);
 }
 const delLayout = ()=>{
-    let lid = layoutID.value;
+    let lid = config.value.user.lid;
     let name = config.value.layout.find(v=>v.lid===lid).name||"";
     if(!name)return;
     window.confirm(`确定删除图层[${name}]`,"", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
     }).then(v=>{
-        setLayout(layoutID.value,"删除");
+        setLayout(config.value.user.lid,"删除");
     }).catch(()=>{});
 }
 const catLayout = ()=>{
@@ -156,7 +156,11 @@ const catLayout = ()=>{
         confirmButtonText: "确定",
         cancelButtonText: "取消",
     }).then(v=>{
-        setLayout(null,hint,name);
+        if(hint=="创建"){
+            setLayout(null,hint,name);
+        }else{
+            setLayout(lot.lid,hint,name);
+        }
     }).catch(()=>{});
 };
 
@@ -285,13 +289,13 @@ const consoleHandle = (val)=>{
 }
 
 const layoutHandle = (v)=>{
-    console.log(layoutID.value)
+    console.log(config.value.user.lid)
 }
 
 var ID = ()=>Date.now().toString(36);
 
 function sendCanvas(){
-    const {room:{rid,lid},user:{uid}} = config.value;
+    const {room:{rid},user:{uid,lid}} = config.value;
     socket.emit("stream",{
         event:"all",
         rid,uid,lid,
@@ -301,7 +305,7 @@ function sendCanvas(){
 
 
 var modified = shakeProof((frame,syn=false)=>{
-    const {room:{rid,lid},user:{uid}} = config.value;
+    const {room:{rid},user:{uid,lid}} = config.value;
     socket.emit("stream",{
         event:"edit",
         rid,uid,lid,syn,
@@ -454,7 +458,6 @@ const stream = data=>{
     try{
         const {rid,lid,uid,event,frame} = data;
         config.value.user.lid = lid;
-        layoutID.value = lid;
         if(event!=="refresh"&&uid === config.value.user.uid){
             return;
         }
@@ -730,7 +733,7 @@ function init() {
 }
 
 function refresh(){
-    const {room:{rid,lid},user:{uid}} = config.value;
+    const {room:{rid},user:{uid,lid}} = config.value;
     socket.emit("stream",{
         event:"refresh",
         rid,uid,lid,
@@ -749,14 +752,25 @@ function setLayout(lid,type="切换",name){
                 }
             });
             return;
+        case "创建":
+            socket.emit("stream",{
+                event:"refresh",
+                rid,uid,lid:null,
+                frame:{
+                    type,name
+                }
+            });
+            return;
+        default:
+            config.value.user.lid = lid;
+            socket.emit("stream",{
+                event:"refresh",
+                rid,uid,lid,
+                frame:{
+                    type,name
+                }
+            });
     }
-    socket.emit("stream",{
-        event:"refresh",
-        rid,uid,lid,
-        frame:{
-            type,name
-        }
-    });
 }
 
 onMounted(() => {

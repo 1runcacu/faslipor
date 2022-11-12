@@ -26,17 +26,13 @@ socket.on("message", (res={}) => {
 });
 
 socket.on("asset", (res={}) => {
-    const {event,state,data} = res;
-    if(state===200){
-      switch(event){
-        case "list":store.commit("setRooms",res.data);console.log("asset:",res);break;
-        case "sync":
-          console.log(res.data);
-          store.commit("setParams",res.data);break;
-        default:ctx.$message({message:"事件异常!!!",type:"error"});
-      }
-    }else{
-      ctx.$message({message:"服务端异常!!!",type:"error"});
+    const {event,data,params} = res;
+    switch(event){
+      case "list":store.commit("setRooms",data);console.log("asset:",res);break;
+      case "sync":
+        console.log(params);
+        store.commit("setParams",params);break;
+      default:ctx.$message({message:"事件异常!!!",type:"error"});
     }
 });
 

@@ -25,10 +25,6 @@ const layoutBuffer = {};
 
 const sockets = {};
 
-function getList(){
-  
-}
-
 function message(socket,msg="",type="info"){
   socket.emit("message",{
     message:msg,
@@ -63,31 +59,29 @@ function createRoom(socket,params){
     limit:10,
     stats:1
   };
+  roomsUsers[rid] = [{
+    uid,state:"管理员",lid,
+    socket
+  }];
+  const user = {
+    uid,lid,
+    state:"管理员"
+  }
+  const data = {
+    room,
+    user,
+    layout:[{lid,name:"Sheet"}]
+  };
   rooms[rid] = room;
   roomBuffer[rid] = {};
   roomBuffer[rid][lid] = {};
   actionBuffer[rid] = {};
   actionBuffer[rid][lid] = {};
-  const user = {
-    uid,lid,
-    state:"管理员",
-    socket
-  }
-  roomsUsers[rid] = {};
-  roomsUsers[rid][uid] = user;  
-  layoutBuffer[rid] = {};
-  layoutBuffer[rid][lid] = {
+  layoutBuffer[rid] = [];
+  layoutBuffer[rid].push({
     lid,name:"Sheet"
-  };
-  const data = {
-    room,
-    user:{
-      uid:user.uid,
-      lid:user.lid,
-      state:user.state
-    },
-    layout:Object.values(layoutBuffer[rid])
-  };
+  });
+  users[uid] = user;
   goto(socket,`/panel`,data);
 }
 
@@ -96,19 +90,19 @@ function enterRoom(socket,params){
   const uid = ID();
   const room = rooms[rid];
   const user = {
-    uid,lid:Object.keys(layoutBuffer[rid])[0],
-    state:"普通成员",socket
+    uid,lid:layoutBuffer[rid][0].lid,
+    state:"普通成员"
   }
   room.stats++;
-  roomsUsers[rid][uid] = user;
+  console.log(layoutBuffer[rid])
+  roomsUsers[rid].push({
+    uid,state:"普通成员",lid:user.lid,
+    socket
+  });
   const data = {
     room,
-    user:{
-      uid:user.uid,
-      lid:user.lid,
-      state:user.state
-    },
-    layout:Object.values(layoutBuffer[rid])
+    user,
+    layout:layoutBuffer[rid]
   };
   goto(socket,`/panel`,data);
 }
@@ -116,15 +110,15 @@ function enterRoom(socket,params){
 function exitRoom(socket,params){
   const {uid,rid} = params;
   const room = rooms[rid];
-  const user = roomsUsers[rid][uid];
-  if(user){
-    room.stats--;
-    delete roomsUsers[rid][uid];
+  room.stats--;
+  const index = roomsUsers[rid].findIndex(v=>v.uid===uid);
+  roomsUsers[rid].splice(index,1);
+  delete users[uid];
+  if(roomsUsers[rid].length===0){
     delete rooms[rid];
     delete roomsUsers[rid];
     delete roomBuffer[rid];
     delete actionBuffer[rid];
-    delete layoutBuffer[rid];
   }
   goto(socket,"/",{});
 }
@@ -132,11 +126,12 @@ function exitRoom(socket,params){
 function exitUser(socket){
   let rid,uid;
   for(let key in roomsUsers){
-    let has = Object.values(roomsUsers[key]).find(v=>v.socket===socket);
+    let has = roomsUsers[key].find(v=>v.socket===socket);
     if(has){
       rid = key;
       uid = has.uid;
       exitRoom(socket,{uid,rid});
+      break;
     }
   }
 }
@@ -148,56 +143,31 @@ function broadCastList(list){
 }
 
 function broadCastRoomUsers(rid,data){
-  const {lid} = data;
-  Object.values(roomsUsers[rid]).forEach(user=>{
-    console.log(153,user.lid,lid);
+  let {lid} = data;
+  roomsUsers[rid].forEach(user=>{
+    console.log("R:",user.lid,lid);
     if(user.lid===lid){
       user.socket.emit("stream",data);
     }
   })
 }
 
-function broadCastAsset(rid,dlid){
-  const room = rooms[rid];
-  let layout = Object.values(layoutBuffer[rid]);
-  for(let uid in roomsUsers[rid]){
-    let user = roomsUsers[rid][uid];
-    const {state,lid} = user;
-    if(dlid === lid){
-      user.socket.emit("asset",{
-        event:"sync",
-        params:{
-          room,user:{
-            uid,state,lid:layout[0].lid,
-          },
-          layout
-        }
-      });
-      user.lid = layout[0].lid;
-      refresh(user.socket,rid,layout[0].lid,uid);
-    }else{
-      user.socket.emit("asset",{
-        event:"sync",
-        params:{
-          room,user:{
-            uid,state,lid
-          },
-          layout
-        }
-      });
-    }
-  }
+function broadCastAsset(event="sync",rid,params){
+  roomsUsers[rid].forEach(user=>{
+    user.socket.emit("asset",{
+      event,
+      params
+    });
+  })
 }
+
 
 function record(rid,lid,uid,frame){
   if(!roomBuffer[rid])roomBuffer[rid]={};if(!roomBuffer[rid][lid])roomBuffer[rid][lid]={};
   if(!actionBuffer[rid])actionBuffer[rid]={};if(!actionBuffer[rid][lid])actionBuffer[rid][lid]={};
   const buf = roomBuffer[rid][lid];
   const act = actionBuffer[rid][lid];
-  const {type,pixel:{gid,date},syn} = frame;
-  if(syn){
-    console.log(197,rid,lid,uid);
-  }
+  const {type,pixel:{gid,date}} = frame;
   if(act[gid]){
     if(act[gid].type=="删除"){
       return {
@@ -232,16 +202,20 @@ function record(rid,lid,uid,frame){
   }
 }
 
-function synRoom(rid,uid,lid,dlid){
-  const US = roomsUsers[rid][uid];
-  if(dlid==null){
-    US.lid = lid;
-    broadCastAsset(rid);
-    refresh(US.socket,rid,lid,uid);
-  }else{
-    broadCastAsset(rid,dlid);
-    refresh(US.socket,rid,lid,uid);
-  }
+function synRoom(rid,uid,lid){
+  const room = rooms[rid];
+  roomsUsers[rid].forEach(v=>{
+    console.log(v.uid);
+  });
+  const US = roomsUsers[rid].find(v=>v.uid===uid);
+  US.lid = lid;
+  const data = {
+    room,
+    user:{uid:US.uid,state:US.state,lid},
+    layout:layoutBuffer[rid]
+  };
+  broadCastAsset("sync",rid,data);
+  refresh(US.socket,rid,lid,uid);
 }
 
 function layoutRefesh(socket,rid,uid,lid,frame){
@@ -250,20 +224,11 @@ function layoutRefesh(socket,rid,uid,lid,frame){
   if(lid){
     if(type==="删除"){
       delete roomBuffer[rid][lid];
-      delete layoutBuffer[rid][lid];
-      let dlid = lid;
-      if(Object.keys(layoutBuffer[rid]).length===0){
-        lid = ID();
-        roomBuffer[rid][lid] = {};
-        layoutBuffer[rid][lid] = {
-          lid,name:"Sheet"
-        }
-      }
-      lid = Object.keys(layoutBuffer[rid])[0];
-      synRoom(rid,uid,lid,dlid);
+      layoutBuffer[rid] = layoutBuffer[rid].filter(v=>v.lid===lid);
+      synRoom(rid,uid,lid);
       return;
     }else{
-      let user = roomsUsers[rid][uid];
+      let user = roomsUsers[rid].find(v=>v.uid===uid);
       user.lid = lid;
       refresh(socket,rid,lid,uid);
       return;
@@ -271,19 +236,29 @@ function layoutRefesh(socket,rid,uid,lid,frame){
   }else{
     lid = ID();
     roomBuffer[rid][lid] = {};
-    layoutBuffer[rid][lid] = {
+    layoutBuffer[rid].push({
       lid,name
-    }
+    });
+  }
+  if(layoutBuffer[rid].length===0){
+    lid = ID();
+    roomBuffer[rid][lid] = {};
+    layoutBuffer[rid].push({
+      lid,name:"Sheet"
+    });
+    synRoom(rid,uid,lid);
+    return;
   }
   synRoom(rid,uid,lid);
+  // broadCastRoomUsers(rid,{
+  //   event,rid,uid,lid,frame:roomBuffer[rid][lid]
+  // });
 }
 
 function refresh(socket,rid,lid,uid){
-  console.log("LS:",Object.keys(roomBuffer[rid]))
-  console.log(lid)
   socket.emit("stream",{
     event:"refresh",rid,uid,lid,
-    frame:roomBuffer[rid][lid]||{}
+    frame:roomBuffer[rid][lid]
   });
 }
 
@@ -302,14 +277,14 @@ io.on('connection',(socket) => {
           case "select":enterRoom(socket,params);broadCastList(Object.values(rooms));break;
           case "exit":exitRoom(socket,params);broadCastList(Object.values(rooms));break;
         }
-      }catch(err){console.log(err)}
+      }catch(err){}
     });
     socket.on('stream',data=>{
       try{
         const {event,rid,uid,lid,frame} = data;
         switch(event){
-          // case "increment"://broadCastRoomUsers(rid,data);break;
-          // case "all":broadCastRoomUsers(rid,data);break;
+          case "increment"://broadCastRoomUsers(rid,data);break;
+          case "all":broadCastRoomUsers(rid,data);break;
           case "edit":broadCastRoomUsers(rid,record(rid,lid,uid,frame));break;
           case "refresh":layoutRefesh(socket,rid,uid,lid,frame);break;
         }
@@ -339,7 +314,7 @@ io.on('connection',(socket) => {
     })
 });
 
-server.listen(8102,() => {
+server.listen(8099,() => {
     console.log("server is up and running on port 8102");
 });
 
