@@ -1,12 +1,12 @@
-import axios from "axios";
+// import axios from "axios";
 
-const AJAX = axios.create({
-    baseURL: "/",
-    timeout: 5000,
-    headers:{
-        'Content-Type': 'application/json'
-    }
-});
+// const AJAX = axios.create({
+//     baseURL: "/",
+//     timeout: 5000,
+//     headers:{
+//         'Content-Type': 'application/json'
+//     }
+// });
 // 函数节流
 export const throttle = function(fn, delay){
     var timer;

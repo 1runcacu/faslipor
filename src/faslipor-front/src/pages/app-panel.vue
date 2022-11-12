@@ -137,7 +137,7 @@ watch(
     p=>{
         config.value.user.lid = p[0];
         console.log(p[0],layoutID.value);
-    },
+    }
 );
 
 const LChangeHandle = ()=>{
@@ -467,6 +467,10 @@ function addPixel(...args){
                     editcall(false);
                 }
             }
+            o.onSelect = ()=>{
+                console.log(o);
+                selectPixel(o.type,o);
+            }
             o.on("moving",editcall);
             o.on("scaling",editcall);
             o.on("rotating",editcall);
@@ -536,6 +540,26 @@ const EditBox = ref({
     fontColor:"#234567"
 });
 
+watch(
+    ()=>[EditBox.value.lineWidth,EditBox.value.fontSize,EditBox.value.fontColor],
+    p=>{
+        let [lineWidth,fontSize,fontColor] = p;
+        if(selectObj){
+            Object.assign(gloStyle,{
+                lineWidth,fontSize,fontColor
+            });
+        }else{
+            console.log(selectObj);
+            // if(selectObj.type==="i-text"){
+
+            // }else{
+            //     selectObj.strokeWidth = lineWidth;
+            //     selectObj.stroke = fontColor;
+            // }
+        }
+    }
+);
+
 function setCvsZoom(dt=0.1){
     nowZoom = nowZoom + dt;
     nowZoom = Math.max(0.1, nowZoom); //最小为原来的1/10
@@ -558,6 +582,31 @@ function setCvsZoom(dt=0.1){
 
 const send = shakeProof(()=>sendCanvas(),30);
 
+var gloStyle = {
+    lineWidth:1,
+    fontSize:1,
+    fontColor:"#A1ABBF"
+}
+
+var selectObj = null;
+
+function selectPixel(type,o){
+    switch(type){
+        case "layout":
+            selectObj = null;
+            edit.value.reset(gloStyle.lineWidth,gloStyle.fontSize,gloStyle.fontColor);
+            break;
+        case "i-text":
+            selectObj = o;
+            // edit.value.reset(o.lineWidth,gloStyle.fontSize,gloStyle.fontColor);
+            break;
+        default:
+            selectObj = o;
+            edit.value.reset(o.strokeWidth,gloStyle.fontSize,gloStyle.stroke);
+            // edit.value.reset(1,2,"#232312");
+    }
+}
+
 function init() {
     canvas = new fabric.Canvas('canvas');
     pencil = new fabric.Canvas('pencil');
@@ -568,13 +617,8 @@ function init() {
     canvas.on('mouse:down', function(options) {
         if(options.e.ctrlKey||ctrlFlag) {
           panning = true;
-        //   canvas.selection = false;
         }
-        //getVpCenter getZoom getCenterPoint getZoom
-        // console.log(canvas.getVpCenter());
-        // console.log(canvas.getZoom());
-        // console.log(canvas.getCenterPoint());
-
+        selectPixel("layout");
         // edit.value.reset(1,2,"#232312");
     });
 
@@ -654,7 +698,7 @@ function init() {
     }
 
     pencil.on('mouse:up', function(options) {
-        let {lineWidth,fontSize,fontColor} = EditBox.value;
+        let {lineWidth,fontSize,fontColor} = gloStyle;
         toolShow.value=true;
         zindex.value = 0;
         let obj = pencil.getObjects()[0];
@@ -709,8 +753,6 @@ function init() {
             type:"添加",
             pixel:json
         },true);
-        // let path = new fabric.Path(json.path,json);
-        // canvas.add(path);
     });
     
     canvas.on("mouse:wheel", function(options) {
@@ -747,22 +789,6 @@ function init() {
             },true);
         }
     });
-
-    //线段
-//https://juejin.cn/post/7026941253845516324
-
-    //画笔
-//https://blog.csdn.net/jamesclark/article/details/123125753
-
-
-//event
-//http://fabricjs.com/events
-
-//curve
-//http://fabricjs.com/quadratic-curve
-    // canvas.on('after:render', function (options) {
-    //     console.log(canvas.getActiveObject())
-    // });
 
     pencil.freeDrawingBrush.width = 3;
     pencil.freeDrawingBrush.color = 'pink';

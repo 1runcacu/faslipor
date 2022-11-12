@@ -75,7 +75,6 @@ export default{
     },
     methods:{
         reset(lw,fs,fc){
-            console.log(lw,fs,fc);
             this.LW = lw;
             this.FS = fs;
             this.FC = fc;
