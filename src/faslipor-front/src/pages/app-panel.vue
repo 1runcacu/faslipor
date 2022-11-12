@@ -136,11 +136,12 @@ watch(
     ()=>[layoutID.value],
     p=>{
         config.value.user.lid = p[0];
+        console.log(p[0],layoutID.value);
     },
 );
 
 const LChangeHandle = ()=>{
-    config.value.user.lid&&setLayout(config.value.user.lid);
+    layoutID.value&&setLayout(layoutID.value);
 }
 const delLayout = ()=>{
     let lid = config.value.user.lid;
@@ -518,7 +519,7 @@ const stream = data=>{
             case "refresh":
                 canvas.clear();
                 addPixel(...Object.values(frame));
-                showMSG("刷新成功","success");
+                // showMSG("刷新成功","success");
                 break;
         }
     }catch(err){console.log(err)};
@@ -783,8 +784,6 @@ function init() {
 
 function refresh(){
     const {room:{rid},user:{uid,lid}} = config.value;
-    layoutID.value = lid;
-    console.log("refresh:",rid,uid,lid);
     socket.emit("stream",{
         event:"refresh",
         rid,uid,lid,
@@ -814,6 +813,7 @@ function setLayout(lid,type="切换",name){
             return;
         default:
             config.value.user.lid = lid;
+            console.log(lid);
             socket.emit("stream",{
                 event:"refresh",
                 rid,uid,lid,
@@ -827,8 +827,6 @@ function setLayout(lid,type="切换",name){
 onMounted(() => {
     init();
     socket.on("stream",stream);
-    layoutID.value = config.value.user.lid;
-    console.log("config:",config.value);
     refresh();
     document.onkeydown=function(event){
         event = event|| window.event;

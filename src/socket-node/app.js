@@ -1,11 +1,15 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const socketIO = require('socket.io');
 const app = express();
 const server = http.createServer(app);
- 
+const fs = require('fs');
+
 //redis
 //https://docs.redis.com/latest/rs/references/client_references/client_nodejs/
+
+app.use('/static',express.static(path.join(__dirname,'public')));
 
 const io = socketIO(server,{
     cors: {
@@ -25,6 +29,8 @@ const layoutBuffer = {};
 const sockets = {};
 
 const mirror = {};
+
+const addr = path.normalize(__dirname + '/static');
 
 function message(socket,msg="",type="info"){
   socket.emit("message",{
@@ -265,6 +271,7 @@ function layoutRefesh(socket,rid,uid,lid,frame){
     }else{
       let user = roomsUsers[rid][uid];
       user.lid = lid;
+      // console.log(lid);
       refresh(socket,rid,lid,uid);
       return;
     }
@@ -298,10 +305,12 @@ function screenshot(rid,lid){
   };
   if(!mirror[rid][lid].history)mirror[rid][lid].history=[];
   if(!mirror[rid][lid].back)mirror[rid][lid].back=[];
+  if(mirror[rid][lid].history.length>0){
+    if(mirror[rid][lid].history[mirror[rid][lid].history.length-1]===scshot)return;
+  }
   mirror[rid][lid].history.push(scshot);
-  if(mirror[rid][lid].history.length>5)mirror[rid][lid].history.shift();
+  if(mirror[rid][lid].history.length>10)mirror[rid][lid].history.shift();
   mirror[rid][lid].back.length = 0;
-  console.log(rid,lid,"截图成功",mirror[rid][lid].history.length);
 }
 
 function undoapply(rid,lid){
@@ -315,21 +324,57 @@ function undoapply(rid,lid){
   let scshot = mirror[rid][lid].history.pop()||"{}";
   mirror[rid][lid].back.push(scshot);
   let {pixel,action} = JSON.parse(scshot);
-  console.log("udo:",action);
+  roomBuffer[rid][lid] = pixel;
+  actionBuffer[rid][lid] = action;
+  broadCastRoomUsers(rid,{
+    event:"refresh",rid,lid,
+    frame:roomBuffer[rid][lid]||{}
+  });
 }
 
-function screenSave(rid,lid){
+function redoapply(rid,lid){
+  if(!mirror[rid])mirror[rid] = {};
+  if(!mirror[rid][lid])mirror[rid][lid] = {
+    history:[],
+    back:[]
+  };
+  if(!mirror[rid][lid].history)mirror[rid][lid].history=[];
+  if(!mirror[rid][lid].back)mirror[rid][lid].back=[];
+  let scshot = mirror[rid][lid].back.pop()||"{}";
+  mirror[rid][lid].history.push(scshot);
+  let {pixel,action} = JSON.parse(scshot);
+  roomBuffer[rid][lid] = pixel;
+  actionBuffer[rid][lid] = action;
+  broadCastRoomUsers(rid,{
+    event:"refresh",rid,lid,
+    frame:roomBuffer[rid][lid]||{}
+  });
+}
 
+function screenSave(socket,rid,lid){
+  const scshot = JSON.stringify({
+    pixel:roomBuffer[rid][lid],
+    action:actionBuffer[rid][lid]
+  });
+  let {name} = layoutBuffer[rid][lid];
+  fs.writeFile(`${addr}/${name||"Sheet"}.txt`,scshot,{ flag: 'w' }, function (error){
+    if(error){
+        console.log(error)
+    }else{
+      message(socket,`/static/${name||"Sheet"}.fsl`,"info");
+    }
+  });
 }
 
 function makeAct(socket,event,rid,lid,uid,frame){
-  console.log(event,rid,lid,uid);
+  // console.log(event,rid,lid,uid);
   switch(event){
     case "save":
       screenshot(rid,lid);
       message(socket,"保存成功","success");
       break;
     case "export":
+      screenSave(socket,rid,lid);
       break;
     case "import":
         break;
@@ -338,6 +383,8 @@ function makeAct(socket,event,rid,lid,uid,frame){
       message(socket,"撤回成功","success");
       break;
     case "redo":
+      redoapply(rid,lid);
+      message(socket,"重做成功","success");
       break;
   }
 }
@@ -402,50 +449,3 @@ io.on('connection',(socket) => {
 server.listen(8099,() => {
     console.log("server is up and running on port 8102");
 });
-
-// actionBuffer = {
-//   "rid1":{
-//     "lid1":{
-//       gid1:[
-//         {
-//           event:"添加",
-//           date:0,
-//           frame:{}//xxxxxxx
-//         },
-//         {
-//           event:"编辑",
-//           date:2,
-//           frame:{}//xxxxxxx
-//         },
-//         {
-//           event:"编辑",
-//           date:4,
-//           frame:{}//xxxxxxx
-//         },
-//         {
-//           event:"删除",
-//           date:5,
-//           frame:{}//xxxxxxx
-//         }
-//       ]
-//     },
-//     "lid2":{
-//       gid1:[
-//         {
-//           event:"添加",
-//           date:0,
-//           frame:{}//xxxxxxx
-//         },{
-//           event:"编辑",
-//           date:4,
-//           frame:{}//xxxxxxx
-//         },
-//         {
-//           event:"删除",
-//           date:5,
-//           frame:{}//xxxxxxx
-//         }
-//       ]
-//     }
-//   }
-// }
