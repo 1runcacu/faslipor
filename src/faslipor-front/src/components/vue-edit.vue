@@ -27,9 +27,9 @@
                         />
                         <div class="block"></div>
                         <el-button :type="CTL?'success':'info'" link @click="key(17)">CTL</el-button><br/>
-                        <el-button :type="ENT?'success':'info'" link @click="key(13)">ENT</el-button>
+                        <el-button :type="ESC?'success':'info'" link @click="key(13)">ESC</el-button>
                         <div class="block"></div>
-                        <img src="@/assets/icon/保存.png"/>
+                        <img src="@/assets/icon/保存.png" v-click2="()=>handle('保存')"/>
                         <!-- <el-icon><Operation/></el-icon> -->
                         <!-- <img src="@/assets/icon/复制.png"/> -->
                         <el-popover placement="left" trigger="click" :width="50">
@@ -61,7 +61,7 @@ export default{
         return {
             select:false,
             CTL:false,
-            ENT:false,
+            ESC:false,
             LW:"1.1",
             FS:"1.2",
             FC:"#233456"
@@ -88,9 +88,9 @@ export default{
             // KeyEvent(k);
             switch(k){
                 case 17:this.CTL = !this.CTL;this.$emit("KD",17,this.CTL);break;
-                case 13:this.ENT = true;setTimeout(() => {
-                    this.ENT = false;
-                }, 500);this.$emit("KD",13,this.ENT);break;
+                case 13:this.ESC = true;setTimeout(() => {
+                    this.ESC = false;
+                }, 500);this.$emit("KD",13,this.ESC);break;
             }
         },
         handle(e,data){

@@ -1,5 +1,5 @@
 <template>
-    <div class="drag-box" v-if="!winShow" v-click2="open">
+    <div class="drag-box" v-if="!winShow" v-dbclick2="open">
       <div class="ban-select-font" v-drag>
         <img src="@/assets/logo.png" id="logo"/>
       </div>
