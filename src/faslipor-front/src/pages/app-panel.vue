@@ -104,8 +104,6 @@ import {throttle,shakeProof} from "@/api/util";
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 
-console.log(ctx);
-
 const socket = inject("socket");
 const store = useStore();
 const router = useRouter();
@@ -138,7 +136,7 @@ const LChangeHandle = ()=>{
 }
 const delLayout = ()=>{
     let lid = layoutID.value;
-    let name = config.layout.find(v=>v.lid===lid).name||"";
+    let name = config.value.layout.find(v=>v.lid===lid).name||"";
     if(!name)return;
     window.confirm(`确定删除图层[${name}]`,"", {
         confirmButtonText: "确定",
@@ -149,7 +147,7 @@ const delLayout = ()=>{
 }
 const catLayout = ()=>{
     let name = Lyname.value;
-    let lot = config.layout.find(v=>v.name===name);
+    let lot = config.value.layout.find(v=>v.name===name);
     let hint = "创建";
     if(lot){
         hint = "切换"
@@ -158,7 +156,7 @@ const catLayout = ()=>{
         confirmButtonText: "确定",
         cancelButtonText: "取消",
     }).then(v=>{
-        setLayout(layoutID.value,hint,name);
+        setLayout(null,hint,name);
     }).catch(()=>{});
 };
 
