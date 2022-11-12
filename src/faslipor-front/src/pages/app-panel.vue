@@ -36,7 +36,7 @@
             <el-collapse-item title="图层" name="1">
                 <div class="input">
                     <div class="ipt-name">
-                        <select v-model="config.user.lid" class="block" @change="LChangeHandle">
+                        <select v-model="layoutID" class="block" @change="LChangeHandle">
                             <option
                                 v-for="item in config.layout"
                                 :key="item.lid"
@@ -93,7 +93,7 @@
 import { ElPageHeader,ElCollapse,ElCollapseItem} from 'element-plus';
 import { ArrowLeft,Check,Refresh,Delete } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { inject, ref,computed,onBeforeUnmount,getCurrentInstance } from 'vue';
+import { inject, ref,computed,onBeforeUnmount,getCurrentInstance,watch } from 'vue';
 import { onMounted } from 'vue'
 import { fabric } from 'fabric'
 import vueConsoleVue from '@/components/vue-console.vue';
@@ -131,6 +131,14 @@ const nameUseable = computed(()=>{
     }
     return false;
 });
+
+watch(
+    ()=>[layoutID.value],
+    p=>{
+        config.value.user.lid = p[0];
+    },
+);
+
 const LChangeHandle = ()=>{
     config.value.user.lid&&setLayout(config.value.user.lid);
 }
@@ -239,17 +247,32 @@ const kd = (v,state=false)=>{
 }
 
 const editHandle =(e,data)=>{
+    const {room:{rid},user:{uid,lid}} = config.value;
     let actObj = canvas.getActiveObject();
     switch(e){
         case "放大":
+            setCvsZoom(0.05);
             break;
         case "缩小":
+            setCvsZoom(-0.05);
             break;
         case "复制":
+            ctx.$message({
+                type:"info",
+                message:"此功能尚未开发"
+            });
             break;
         case "撤销":
+            socket.emit("stream",{
+                event:"undo",
+                rid,uid,lid
+            });
             break;
         case "重做":
+            socket.emit("stream",{
+                event:"redo",
+                rid,uid,lid
+            });
             break;
         case "删除":
             if(actObj){
@@ -267,11 +290,15 @@ const editHandle =(e,data)=>{
             }
             break;
         case "保存":
+            socket.emit("stream",{
+                event:"save",
+                rid,uid
+            });
             break;
     }
 }
 
-const activeNames = ref(['1']);
+const activeNames = ref(['1','2']);
 
 const toolShow = ref(true);
 
@@ -302,7 +329,6 @@ function sendCanvas(){
         frame:JSON.stringify(canvas.toJSON())
     });
 }
-
 
 var modified = shakeProof((frame,syn=false)=>{
     const {room:{rid},user:{uid,lid}} = config.value;
@@ -382,9 +408,11 @@ const makeShape = item=>{
     // }
 }
 
+var nowZoom = 1;
+
 const makeAct = (item)=>{
     let {label} = item;
-    let {room:{rid,lid},user:{uid}} = config.value;
+    let {room:{rid},user:{uid,lid}} = config.value;
     let event = "error";
     switch(label){
         case "保存":
@@ -402,17 +430,10 @@ const makeAct = (item)=>{
         case "重做":
             event="redo"
             break;
-        case "刷新":
-            refresh();
-            return;
-        case "添加":
-            break;
-        case "删除":
-            break;
     }
     socket.emit("stream",{
         event,
-        rid,uid
+        rid,uid,lid
     });
 }
 
@@ -454,10 +475,17 @@ function addPixel(...args){
     });
 }
 
+const showMSG = shakeProof((message,type="info")=>{
+    ctx.$log({
+        message,type
+    })
+},100);
+
 const stream = data=>{
     try{
         const {rid,lid,uid,event,frame} = data;
         config.value.user.lid = lid;
+        layoutID.value = lid;
         if(event!=="refresh"&&uid === config.value.user.uid){
             return;
         }
@@ -490,10 +518,7 @@ const stream = data=>{
             case "refresh":
                 canvas.clear();
                 addPixel(...Object.values(frame));
-                ctx.$log({
-                    type:"success",
-                    message:"刷新成功"
-                });
+                showMSG("刷新成功","success");
                 break;
         }
     }catch(err){console.log(err)};
@@ -510,21 +535,45 @@ const EditBox = ref({
     fontColor:"#234567"
 });
 
+function setCvsZoom(dt=0.1){
+    nowZoom = nowZoom + dt;
+    nowZoom = Math.max(0.1, nowZoom); //最小为原来的1/10
+    nowZoom = Math.min(3, nowZoom); //最大是原来的3倍
+    let zoomPoint = canvas.getVpCenter();
+    // if(canvas._previousPointer){
+    //     zoomPoint = new fabric.Point(canvas._previousPointer.x,canvas._previousPointer.y);
+    // }
+    // let obj = canvas.getActiveObject();
+    // if(obj){
+    //     let lp = obj.__lastPointer;
+    //     console.log(obj);
+    //     if(lp){
+    //         zoomPoint = new fabric.Point(lp.x,lp.y);
+    //     }
+    // }
+    canvas.zoomToPoint(zoomPoint, nowZoom);
+    pencil.zoomToPoint(zoomPoint, nowZoom);
+}
+
 const send = shakeProof(()=>sendCanvas(),30);
 
 function init() {
     canvas = new fabric.Canvas('canvas');
     pencil = new fabric.Canvas('pencil');
     let panning = false;
-    
+    nowZoom = canvas.getZoom();
     canvas.selection = false;
     pencil.selection = false;
-
     canvas.on('mouse:down', function(options) {
         if(options.e.ctrlKey||ctrlFlag) {
           panning = true;
         //   canvas.selection = false;
         }
+        //getVpCenter getZoom getCenterPoint getZoom
+        // console.log(canvas.getVpCenter());
+        // console.log(canvas.getZoom());
+        // console.log(canvas.getCenterPoint());
+
         // edit.value.reset(1,2,"#232312");
     });
 
@@ -664,12 +713,12 @@ function init() {
     });
     
     canvas.on("mouse:wheel", function(options) {
-        let zoom = (options.e.deltaY > 0 ? -0.1 : 0.1) + canvas.getZoom();
-        zoom = Math.max(0.1, zoom); //最小为原来的1/10
-        zoom = Math.min(3, zoom); //最大是原来的3倍
+        nowZoom = (options.e.deltaY > 0 ? -0.1 : 0.1) + nowZoom;//canvas.getZoom();
+        nowZoom = Math.max(0.1, nowZoom);
+        nowZoom = Math.min(3, nowZoom);
         const zoomPoint = new fabric.Point(options.e.pageX, options.e.pageY);
-        canvas.zoomToPoint(zoomPoint, zoom);
-        pencil.zoomToPoint(zoomPoint, zoom);
+        canvas.zoomToPoint(zoomPoint, nowZoom);
+        pencil.zoomToPoint(zoomPoint, nowZoom);
     });
 
     pencil.on("mouse:wheel", function(options) {
@@ -776,6 +825,7 @@ function setLayout(lid,type="切换",name){
 onMounted(() => {
     init();
     socket.on("stream",stream);
+    layoutID.value = config.value.user.lid;
     refresh();
     document.onkeydown=function(event){
         event = event|| window.event;

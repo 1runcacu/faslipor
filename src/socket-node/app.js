@@ -22,12 +22,9 @@ const roomsUsers = {};
 const roomBuffer = {};
 const actionBuffer = {};
 const layoutBuffer = {};
-
 const sockets = {};
 
-function getList(){
-  
-}
+const mirror = {};
 
 function message(socket,msg="",type="info"){
   socket.emit("message",{
@@ -66,6 +63,8 @@ function createRoom(socket,params){
   rooms[rid] = room;
   roomBuffer[rid] = {};
   roomBuffer[rid][lid] = {};
+  mirror[rid] = {};
+  mirror[rid][lid] = {};
   actionBuffer[rid] = {};
   actionBuffer[rid][lid] = {};
   const user = {
@@ -120,11 +119,14 @@ function exitRoom(socket,params){
   if(user){
     room.stats--;
     delete roomsUsers[rid][uid];
+  }
+  if(Object.keys(roomsUsers[rid]).length===0||room.stats==0){
     delete rooms[rid];
     delete roomsUsers[rid];
     delete roomBuffer[rid];
     delete actionBuffer[rid];
     delete layoutBuffer[rid];
+    delete mirror[rid];
   }
   goto(socket,"/",{});
 }
@@ -150,7 +152,6 @@ function broadCastList(list){
 function broadCastRoomUsers(rid,data){
   const {lid} = data;
   Object.values(roomsUsers[rid]).forEach(user=>{
-    console.log(153,user.lid,lid);
     if(user.lid===lid){
       user.socket.emit("stream",data);
     }
@@ -189,15 +190,12 @@ function broadCastAsset(rid,dlid){
   }
 }
 
-function record(rid,lid,uid,frame){
+function record(rid,lid,uid,frame,syn){
   if(!roomBuffer[rid])roomBuffer[rid]={};if(!roomBuffer[rid][lid])roomBuffer[rid][lid]={};
   if(!actionBuffer[rid])actionBuffer[rid]={};if(!actionBuffer[rid][lid])actionBuffer[rid][lid]={};
   const buf = roomBuffer[rid][lid];
   const act = actionBuffer[rid][lid];
-  const {type,pixel:{gid,date},syn} = frame;
-  if(syn){
-    console.log(197,rid,lid,uid);
-  }
+  const {type,pixel:{gid,date}} = frame;
   if(act[gid]){
     if(act[gid].type=="删除"){
       return {
@@ -205,13 +203,13 @@ function record(rid,lid,uid,frame){
         frame:{type:"删除",pixel:{
           gid
         }}
-      }
+      };
     }
     if(act[gid].date<date){
       buf[gid] = frame.pixel;
       act[gid] = {
         type,date
-      }
+      };
     }
   }else{
     buf[gid] = frame.pixel;
@@ -221,11 +219,13 @@ function record(rid,lid,uid,frame){
   }
   if(type=="删除"){
     delete buf[gid];
+    if(syn)screenshot(rid,lid);
     return {
       rid,lid,uid,event:"edit",
       frame:{type,pixel:{gid}}
     };
   }
+  if(syn)screenshot(rid,lid);
   return {
     rid,lid,uid,event:"edit",
     frame:{type,pixel:buf[gid]}
@@ -246,7 +246,6 @@ function synRoom(rid,uid,lid,dlid){
 
 function layoutRefesh(socket,rid,uid,lid,frame){
   let {name,type} = frame;
-  console.log("L:",rid,uid,lid,frame);
   if(lid){
     if(type==="删除"){
       delete roomBuffer[rid][lid];
@@ -255,6 +254,7 @@ function layoutRefesh(socket,rid,uid,lid,frame){
       if(Object.keys(layoutBuffer[rid]).length===0){
         lid = ID();
         roomBuffer[rid][lid] = {};
+        mirror[rid][lid] = {};
         layoutBuffer[rid][lid] = {
           lid,name:"Sheet"
         }
@@ -271,6 +271,7 @@ function layoutRefesh(socket,rid,uid,lid,frame){
   }else{
     lid = ID();
     roomBuffer[rid][lid] = {};
+    mirror[rid][lid] = {};
     layoutBuffer[rid][lid] = {
       lid,name
     }
@@ -279,12 +280,66 @@ function layoutRefesh(socket,rid,uid,lid,frame){
 }
 
 function refresh(socket,rid,lid,uid){
-  console.log("LS:",Object.keys(roomBuffer[rid]))
-  console.log(lid)
   socket.emit("stream",{
     event:"refresh",rid,uid,lid,
     frame:roomBuffer[rid][lid]||{}
   });
+}
+
+function screenshot(rid,lid){
+  let scshot = JSON.stringify({
+    pixel:roomBuffer[rid][lid],
+    action:actionBuffer[rid][lid]
+  });
+  if(!mirror[rid])mirror[rid] = {};
+  if(!mirror[rid][lid])mirror[rid][lid] = {
+    history:[],
+    back:[]
+  };
+  if(!mirror[rid][lid].history)mirror[rid][lid].history=[];
+  if(!mirror[rid][lid].back)mirror[rid][lid].back=[];
+  mirror[rid][lid].history.push(scshot);
+  if(mirror[rid][lid].history.length>5)mirror[rid][lid].history.shift();
+  mirror[rid][lid].back.length = 0;
+  console.log(rid,lid,"截图成功",mirror[rid][lid].history.length);
+}
+
+function undoapply(rid,lid){
+  if(!mirror[rid])mirror[rid] = {};
+  if(!mirror[rid][lid])mirror[rid][lid] = {
+    history:[],
+    back:[]
+  };
+  if(!mirror[rid][lid].history)mirror[rid][lid].history=[];
+  if(!mirror[rid][lid].back)mirror[rid][lid].back=[];
+  let scshot = mirror[rid][lid].history.pop()||"{}";
+  mirror[rid][lid].back.push(scshot);
+  let {pixel,action} = JSON.parse(scshot);
+  console.log("udo:",action);
+}
+
+function screenSave(rid,lid){
+
+}
+
+function makeAct(socket,event,rid,lid,uid,frame){
+  console.log(event,rid,lid,uid);
+  switch(event){
+    case "save":
+      screenshot(rid,lid);
+      message(socket,"保存成功","success");
+      break;
+    case "export":
+      break;
+    case "import":
+        break;
+    case "undo":
+      undoapply(rid,lid);
+      message(socket,"撤回成功","success");
+      break;
+    case "redo":
+      break;
+  }
 }
 
 io.on('connection',(socket) => {
@@ -306,12 +361,15 @@ io.on('connection',(socket) => {
     });
     socket.on('stream',data=>{
       try{
-        const {event,rid,uid,lid,frame} = data;
+        const {event,rid,uid,lid,frame,syn} = data;
         switch(event){
           // case "increment"://broadCastRoomUsers(rid,data);break;
           // case "all":broadCastRoomUsers(rid,data);break;
-          case "edit":broadCastRoomUsers(rid,record(rid,lid,uid,frame));break;
+          case "edit":broadCastRoomUsers(rid,record(rid,lid,uid,frame,syn));break;
           case "refresh":layoutRefesh(socket,rid,uid,lid,frame);break;
+          default:
+            makeAct(socket,event,rid,lid,uid,frame);
+            break;
         }
       }catch(err){
         console.log(err);
@@ -335,8 +393,10 @@ io.on('connection',(socket) => {
         delete sockets[id];
         exitUser(socket);
         broadCastList(Object.values(rooms));
-      }catch(err){}
-    })
+      }catch(err){
+        console.log(err);
+      }
+    });
 });
 
 server.listen(8099,() => {
