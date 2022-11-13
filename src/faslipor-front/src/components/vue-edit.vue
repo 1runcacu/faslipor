@@ -18,12 +18,12 @@
                         </el-popover>
                         <el-popover placement="left" trigger="click" :width="50">
                             <template #reference>
-                                <img src="@/assets/icon/字体大小.png"/>
+                                <img src="@/assets/icon/字体大小.png" class="FS"/>
                             </template>
-                            <input class="edit" type="number" max="10" min="0.1" placeholder="字体大小" v-model="FS"
+                            <input class="edit" type="color" max="10" min="0.1" placeholder="填充颜色" v-model="FS"
                             />
                         </el-popover>
-                        <input type="color" placeholder="字体颜色" v-model="FC"
+                        <input type="color" placeholder="边框颜色" v-model="FC"
                         />
                         <div class="block"></div>
                         <el-button :type="CTL?'success':'info'" link @click="key(17)">CTL</el-button><br/>
@@ -63,21 +63,21 @@ export default{
             CTL:false,
             ESC:false,
             LW:"1.1",
-            FS:"1.2",
-            FC:"#233456"
+            FS:"#A1ABBF",
+            FC:"#A1ABBF"
         };
     },
     emits:['update:lineWidth','update:fontSize','update:fontColor'],
     props:{
         lineWidth:Number,
-        fontSize:Number,
+        fontSize:String,
         fontColor:String,
     },
     methods:{
         reset(lw,fs,fc){
-            this.LW = lw;
-            this.FS = fs;
-            this.FC = fc;
+            this.LW = lw||1;
+            this.FS = fs||"#A1ABBF";
+            this.FC = fc||"#A1ABBF";
         },
         change(){
             this.select = !this.select;
@@ -205,6 +205,12 @@ export default{
     width: 30px;
     height: 30px;
 }
+.FS{
+    filter: invert(0%) !important;
+    background-color: v-bind(FS);
+    /* mix-blend-mode: difference; */
+}
+
 img:hover,img:active{
     filter: invert(0%);
 }

@@ -5,7 +5,7 @@ const socketIO = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const fs = require('fs');
-const dlHost = `http://127.0.0.1:8099/static`;
+const dlHost = `http://43.143.130.52:8099/static`;
 
 //redis
 //https://docs.redis.com/latest/rs/references/client_references/client_nodejs/
@@ -226,7 +226,7 @@ function record(rid,lid,uid,frame,syn){
         }}
       };
     }
-    if(act[gid].date<date){
+    if(act[gid].date<=date){
       buf[gid] = frame.pixel;
       act[gid] = {
         type,date
@@ -328,7 +328,7 @@ function screenshot(rid,lid){
   mirror[rid][lid].back.length = 0;
 }
 
-function undoapply(rid,lid){
+function undoapply(socket,rid,lid){
   if(!mirror[rid])mirror[rid] = {};
   if(!mirror[rid][lid])mirror[rid][lid] = {
     history:[],
@@ -337,6 +337,7 @@ function undoapply(rid,lid){
   if(!mirror[rid][lid].history)mirror[rid][lid].history=[];
   if(!mirror[rid][lid].back)mirror[rid][lid].back=[];
   let scshot = mirror[rid][lid].history.pop()||"{}";
+  if(scshot==="{}")return;
   mirror[rid][lid].back.push(scshot);
   let {pixel,action} = JSON.parse(scshot);
   roomBuffer[rid][lid] = pixel;
@@ -345,9 +346,10 @@ function undoapply(rid,lid){
     event:"refresh",rid,lid,
     frame:roomBuffer[rid][lid]||{}
   });
+  message(socket,"撤回成功","success");
 }
 
-function redoapply(rid,lid){
+function redoapply(socket,rid,lid){
   if(!mirror[rid])mirror[rid] = {};
   if(!mirror[rid][lid])mirror[rid][lid] = {
     history:[],
@@ -356,6 +358,7 @@ function redoapply(rid,lid){
   if(!mirror[rid][lid].history)mirror[rid][lid].history=[];
   if(!mirror[rid][lid].back)mirror[rid][lid].back=[];
   let scshot = mirror[rid][lid].back.pop()||"{}";
+  if(scshot==="{}")return;
   mirror[rid][lid].history.push(scshot);
   let {pixel,action} = JSON.parse(scshot);
   roomBuffer[rid][lid] = pixel;
@@ -364,6 +367,7 @@ function redoapply(rid,lid){
     event:"refresh",rid,lid,
     frame:roomBuffer[rid][lid]||{}
   });
+  message(socket,"重做成功","success");
 }
 
 function download(socket,name,url="#"){
@@ -408,12 +412,10 @@ function makeAct(socket,event,rid,lid,uid,frame){
     case "import":
         break;
     case "undo":
-      undoapply(rid,lid);
-      message(socket,"撤回成功","success");
+      undoapply(socket,rid,lid);
       break;
     case "redo":
-      redoapply(rid,lid);
-      message(socket,"重做成功","success");
+      redoapply(socket,rid,lid);
       break;
   }
 }

@@ -89,7 +89,6 @@ export function download(name,url){
     const a = document.createElement("a");
     a.setAttribute("download",name);
     a.setAttribute("href",url);
-    console.log(a);
     a.click();
     URL.revokeObjectURL(a.href);
     a.remove();

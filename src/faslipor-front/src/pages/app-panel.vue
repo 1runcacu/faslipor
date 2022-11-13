@@ -136,7 +136,6 @@ watch(
     ()=>[layoutID.value],
     p=>{
         config.value.user.lid = p[0];
-        console.log(p[0],layoutID.value);
     }
 );
 
@@ -280,9 +279,12 @@ const editHandle =(e,data)=>{
                 let pixel = actObj.toJSON(["gid","date"]);
                 pixel.date = Date.now();
                 canvas.remove(actObj);
+                // modifiedSync({
+                //     type:"删除",pixel
+                // });
                 modified({
                     type:"删除",pixel
-                },true);
+                })
             }else{
                 ctx.$message({
                     message:"当前未选中图元喔~",
@@ -340,6 +342,10 @@ var modified = shakeProof((frame,syn=false)=>{
     });
 },2);
 
+var modifiedSync = throttle((func)=>{
+    func();
+},100);
+
 var BUFFER = ref(null);
 
 var SID;
@@ -356,12 +362,14 @@ const makeShape = item=>{
     const {label} = item;
     switch(label){
         case "直线":
-            MODE = 0;break;
+            MODE = 0;
+            break;
         case "曲线":
-            MODE = 1;break;
+            MODE = 1;
+            break;
         case "编辑":
-            MODE = 2;break;
-            return;
+            MODE = 2;
+            break;
         case "三角形":
             MODE = 3;
             break;
@@ -449,17 +457,28 @@ function addPixel(...args){
             canvas.add(o);
             const editcall =(syn=false)=>{
                 o.date = Date.now();
-                modified({
-                    type:"编辑",
-                    pixel:o.toJSON(["gid","date"]),
-                    syn
-                });
+                if(syn){
+                    // modifiedSync({
+                    //     type:"编辑",
+                    //     pixel:o.toJSON(["gid","date"])
+                    // });
+                    modified({
+                        type:"编辑",
+                        pixel:o.toJSON(["gid","date"])
+                    },true);
+                }else{
+                    modified({
+                        type:"编辑",
+                        pixel:o.toJSON(["gid","date"])
+                    });
+                }
             };
             if(o.type==="i-text"){
                 o.onDeselect = function(){
                     this.isEditing&&this.exitEditing();
                     this.selected=false;
                     editcall(true);
+                    selectPixel("layout");
                 };
                 let func = o.onInput.bind(o);
                 o.onInput = function(e){
@@ -468,7 +487,6 @@ function addPixel(...args){
                 }
             }
             o.onSelect = ()=>{
-                console.log(o);
                 selectPixel(o.type,o);
             }
             o.on("moving",editcall);
@@ -479,12 +497,6 @@ function addPixel(...args){
         canvas.renderAll();
     });
 }
-
-const showMSG = shakeProof((message,type="info")=>{
-    ctx.$log({
-        message,type
-    })
-},100);
 
 const stream = data=>{
     try{
@@ -535,27 +547,49 @@ var pencil;
 var edit = ref(null);
 
 const EditBox = ref({
-    lineWidth:2,
-    fontSize:2,
-    fontColor:"#234567"
+    lineWidth:1,
+    fontSize:"#A1ABBF",
+    fontColor:"#A1ABBF"
 });
 
 watch(
     ()=>[EditBox.value.lineWidth,EditBox.value.fontSize,EditBox.value.fontColor],
     p=>{
         let [lineWidth,fontSize,fontColor] = p;
-        if(selectObj){
+        modifiedSync(()=>{
+            if(selectObj!=null){
+                selectObj.date = Date.now();
+                console.log("save");
+                modified({
+                    type:"编辑",
+                    pixel:selectObj.toJSON(["gid","date"])
+                });
+            }
+        });
+        if(selectObj==null){
             Object.assign(gloStyle,{
                 lineWidth,fontSize,fontColor
             });
+            pencil.freeDrawingBrush.color = fontColor;
         }else{
-            console.log(selectObj);
-            // if(selectObj.type==="i-text"){
-
-            // }else{
-            //     selectObj.strokeWidth = lineWidth;
-            //     selectObj.stroke = fontColor;
-            // }
+            if(selectObj.type==="i-text"){
+                Object.assign(textStyle,{
+                    lineWidth,fontSize,fontColor
+                });
+                selectObj.set("strokeWidth",lineWidth);
+                selectObj.set("textBackgroundColor",fontSize);
+                selectObj.set("fill",fontColor);
+            }else{
+                selectObj.set("strokeWidth",lineWidth);
+                selectObj.set("fill",fontSize);
+                selectObj.set("stroke",fontColor);
+            }
+            canvas.renderAll();
+            selectObj.date = Date.now();
+            modified({
+                type:"编辑",
+                pixel:selectObj.toJSON(["gid","date"])
+            });
         }
     }
 );
@@ -584,9 +618,16 @@ const send = shakeProof(()=>sendCanvas(),30);
 
 var gloStyle = {
     lineWidth:1,
-    fontSize:1,
+    fontSize:"#A1ABBF",
     fontColor:"#A1ABBF"
 }
+
+var textStyle = {
+    lineWidth:1,
+    fontSize:"#ffffff",
+    fontColor:"#A1ABBF"
+}
+
 
 var selectObj = null;
 
@@ -598,11 +639,11 @@ function selectPixel(type,o){
             break;
         case "i-text":
             selectObj = o;
-            // edit.value.reset(o.lineWidth,gloStyle.fontSize,gloStyle.fontColor);
+            edit.value.reset(textStyle.lineWidth||1,textStyle.fontSize||"#ffffff",textStyle.fontColor||"#A1ABBF");
             break;
         default:
             selectObj = o;
-            edit.value.reset(o.strokeWidth,gloStyle.fontSize,gloStyle.stroke);
+            edit.value.reset(o.strokeWidth||1,o.fill||"#ffffff",o.stroke||"#A1ABBF");
             // edit.value.reset(1,2,"#232312");
     }
 }
@@ -614,11 +655,13 @@ function init() {
     nowZoom = canvas.getZoom();
     canvas.selection = false;
     pencil.selection = false;
+
+    selectPixel("layout");
+
     canvas.on('mouse:down', function(options) {
         if(options.e.ctrlKey||ctrlFlag) {
           panning = true;
         }
-        selectPixel("layout");
         // edit.value.reset(1,2,"#232312");
     });
 
@@ -679,15 +722,13 @@ function init() {
         path[0][0] = "M";
         path[path.length-1][0] = "L";
         let OBJ = new fabric.Path(path,{
-            stroke:"pink",
+            stroke:gloStyle.fontColor,
             backgroundColor:"",
-            strokeWidth:3,
-            fillRule:"nonzero",
+            strokeWidth:gloStyle.lineWidth||3,
             fill:null,
             gid:SID,
             date:Date.now()
         });
-        
         modified({
             type:"编辑",
             pixel:OBJ.toJSON(["gid","date"])
@@ -706,8 +747,8 @@ function init() {
         pencil.clear();
         let c = json.path.pop();
         let width = 50,height = 50,left = 0,top = 0,radius=50;
-        if(fontSize==null)fontSize = 1.3;
-        if(fontColor=="")fontColor = "pink";
+        if(fontSize==null)fontSize = "#A1ABBF";
+        if(fontColor=="")fontColor = "#A1ABBF";
         if(lineWidth==null)lineWidth = 1.3;
         if(SBOX.Mx!=undefined&&SBOX.My!=undefined&&SBOX.mx!=undefined&&SBOX.my!=undefined){
             left = SBOX.mx;top = SBOX.my;
@@ -716,7 +757,7 @@ function init() {
             radius = ~~(Math.min(height,width)/2);
         }
         const style = { 
-            top,left,width, height,fill:fontColor,radius,
+            top,left,width, height,fill:fontColor,radius,stroke:fontColor
         }
         switch(MODE){
             case 0:
@@ -740,15 +781,18 @@ function init() {
                 json = new fabric.Rect(style).toJSON();
                 break;
             case 6:
-                json = new fabric.IText('TEXT',{top,left,width,height,fontSize:height}).toJSON();
+                json = new fabric.IText('TEXT',{top,left,width,height,fontSize:height,fill:textStyle.fontColor,textBackgroundColor:textStyle.fontSize}).toJSON();
                 break;
             default:return;
         }
         json.gid = SID;
         json.date = Date.now();
         json.strokeWidth = lineWidth;
-        json.stroke = fontColor;
         addPixel(json);
+        // modifiedSync({
+        //     type:"添加",
+        //     pixel:json
+        // });
         modified({
             type:"添加",
             pixel:json
@@ -783,15 +827,19 @@ function init() {
             // });
         }else{
             option.target.date = Date.now();
+            // modifiedSync({
+            //     type:"编辑",
+            //     pixel:option.target.toJSON(["gid","date"])
+            // });
             modified({
                 type:"编辑",
                 pixel:option.target.toJSON(["gid","date"])
-            },true);
+            },true)
         }
     });
 
     pencil.freeDrawingBrush.width = 3;
-    pencil.freeDrawingBrush.color = 'pink';
+    pencil.freeDrawingBrush.color = "#A1ABBF";
     pencil.isDrawingMode = 1; 
 
     canvas.setWidth(window.innerWidth);

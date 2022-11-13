@@ -69,6 +69,12 @@ socket.on("reconnect",res=>{
 
 socket.on("redirect", (res={}) => {
     console.log("redirect:",res);
+    try{
+      if(/panel/.test(res.path)){
+        const {user:{uid}} = res.params;
+        if(uid)store.commit("lock",uid);
+      }
+    }catch(err){ }
     store.commit("setParams",res.params);
     setAllow(true);
     router.push({path:res.path});
