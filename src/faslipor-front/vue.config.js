@@ -23,6 +23,14 @@ module.exports = defineConfig({
           '/CONNECT': ''
         }
       },
+      '/static':{
+        target: 'http://localhost:8099',
+        changeOrigin: true,
+        secure:false,
+        headers:{
+          'Content-Type': 'application/json'
+        }
+      }
       // '/socket.io':{
       //   target: 'http://43.143.130.52:8099/', // target host
       //   changeOrigin: true, // needed for virtual hosted sites

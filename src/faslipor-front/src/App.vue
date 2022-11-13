@@ -12,7 +12,7 @@ import vueBookVue from '@/components/vue-book.vue';
 import { inject,computed,getCurrentInstance,onMounted, onUnmounted } from "vue";
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex';
-import { throttle } from '@/api/util';
+import { throttle,download } from '@/api/util';
 import { setAllow } from "@/state";
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
@@ -34,6 +34,19 @@ socket.on("asset", (res={}) => {
         store.commit("setParams",params);break;
       default:ctx.$message({message:"事件异常!!!",type:"error"});
     }
+});
+
+socket.on("file",(res={})=>{
+  let {name,url} = res;
+  ctx.$confirm(`是否下载${name}?`,"", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+  }).then(()=>{
+      console.log(name,url);
+      download(name,url);
+  }).catch(err=>{
+    console.log(err);
+  });
 });
 
 const disconnect = throttle(()=>{
