@@ -3,17 +3,19 @@ package fastclip.Service;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.corundumstudio.socketio.SocketIOClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fastclip.domain.*;
 import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.*;
 
 import static com.alibaba.fastjson.JSONObject.*;
-import static fastclip.server.MessageEventHandler.socketIOClientMap;
-import static fastclip.server.MessageEventHandler.socketIOClientMap1;
+import static fastclip.server.MessageEventHandler.*;
 
 @Slf4j
 @Service
@@ -21,7 +23,7 @@ public class QueryService {
 
     @Autowired
     RedisService redisService;
-    public Redirect addRoom(SocketIOClient client,String roomName,String brief){
+    public JSONObject addRoom(SocketIOClient client,String roomName,String brief) throws IOException {
         //新建房间
         House newRoom=new House();
         Date time0 = new Date();
@@ -33,7 +35,7 @@ public class QueryService {
         newRoom.state=true;
         newRoom.stats=1;
         //新建用户
-        User newUser = new User();
+        Usr newUser = new Usr();
         Date time1 = new Date();
         newUser.uid = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
         newUser.state = "创建者";
@@ -53,13 +55,30 @@ public class QueryService {
         nameList.add(newNameList);
         redisService.set(newRoom.rid, newRoom);
         redisService.set(newRoom.rid+"nameList",nameList);
-        redisService.set(newUser.uid+"User",newUser);
         redisService.set(newUser.uid+"Room",newRoom);
-        Redirect redirect=new Redirect();
+        Layout myLayout=new Layout();
+        time0 = new Date();
+        myLayout.name="sheet";
+        newUser.lid=((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
+        myLayout.lid=newUser.lid+"";
+        log.info(String.valueOf(newUser.lid==myLayout.lid));
+        nowAllMap.put(newRoom.rid+myLayout.lid+"",null);
+        List<Layout> layouts=redisService.get(newRoom.rid+"layout",List.class);
+        if(layouts==null){
+            layouts=new ArrayList<>();
+        }
+        layouts.add(myLayout);
+        redisService.set(newRoom.rid+"layout",layouts);
+        redisService.set(newUser.uid+"layout",myLayout);
+        redisService.set(newUser.uid+"User",newUser);
+        Redirect redirect = new Redirect();
         redirect.path="/panel";
         redirect.params.user=newUser;
         redirect.params.room=newRoom;
-        return redirect;
+        redirect.params.layout=layouts;
+        log.info(JSONObject.toJSONString(redirect));
+        log.info(""+JSON.parseObject(JSONObject.toJSONString(redirect)));
+        return JSON.parseObject(JSONObject.toJSONString(redirect));
     }
 
     public Result list(){
@@ -159,10 +178,10 @@ public class QueryService {
         myRoom.stats=num;
         arrList.add(JSON.parseObject(JSON.toJSONString(myRoom)));
         redisService.set("list",arrList);
-        User newUser = new User();
+        Usr newUser = new Usr();
         Date time1 = new Date();
         newUser.uid = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
-        newUser.state = "游客";
+        newUser.state = "普通成员";
         socketIOClientMap.put(newUser.uid,client);
         socketIOClientMap1.put(client,newUser.uid);
         log.info(newUser.uid+" "+client);
@@ -174,11 +193,13 @@ public class QueryService {
         nameList0.add(JSON.parseObject(JSON.toJSONString(newNameList)));
         redisService.set(myRoom.rid, myRoom);
         redisService.set(myRoom.rid+"nameList",nameList0);
-        redisService.set(newUser.uid+"User",newUser);
         redisService.set(newUser.uid+"Room",myRoom);
         redirect.path="/panel";
-        redirect.params.user=newUser;
         redirect.params.room=myRoom;
+        redirect.params.layout=redisService.get(myRoom.rid+"layout",List.class);
+        newUser.lid=JSON.parseObject(JSON.toJSONString(redirect.params.layout.get(0)),Layout.class).lid;
+        redirect.params.user=newUser;
+        redisService.set(newUser.uid+"User",newUser);
         return redirect;
     }
 

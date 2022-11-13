@@ -73,12 +73,12 @@ public class MessageEventHandler {
 
 
     @OnEvent(value = "query")
-    public void onQuery(SocketIOClient client, AckRequest request, Query data) {
+    public void onQuery(SocketIOClient client, AckRequest request, Query data) throws IOException {
           log.info("query");
-          log.info(""+data);
+          log.info(""+JSONObject.toJSONString(data));
           if(data.event.equals("add"))
         { log.info("add");
-            client.sendEvent("redirect", queryService.addRoom(client,data.params.roomName,data.params.description));
+            client.sendEvent("redirect",queryService.addRoom(client,data.params.roomName,data.params.description));
         }
         if(data.event.equals("select")){
             log.info("select");
@@ -108,83 +108,160 @@ public class MessageEventHandler {
     @OnEvent(value="stream")
     public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException, IOException {
        log.info("stream");
-       log.info(""+data0);
+       log.info(""+""+JSONObject.toJSONString(data0));
        if(data0.get("event").equals("save")){
            log.info("save");
            client.sendEvent("message",streamService.save(client,request,data0));
        }
        if(data0.get("event").equals("refresh")) {
            log.info("refresh");
-           String uid = socketIOClientMap1.get(client);
-           House myRoom = redisService.get(uid + "Room", House.class);
-           if(!nowAllMap.containsKey(myRoom.rid)) return;
-           Refresh myRe=new Refresh();
-           myRe.rid=myRoom.rid;
-           myRe.uid=uid;
-           log.info(nowAllMap.containsKey(myRoom.rid)+" ");
-           myRe.frame=nowAllMap.get(myRoom.rid);
-           log.info(myRe.frame.toJSONString());
-           log.info(JSONObject.toJSONString(myRe));
-           client.sendEvent("stream",myRe);
+           Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
+
+           if(data.frame.type==null) //刚进入
+           {  Refresh myRe=streamService.refresh(client,data.lid);
+               if(myRe==null) return;
+               client.sendEvent("stream",myRe);}
+           else if(data.frame.type.equals("切换")){
+               Refresh myRe=streamService.refresh(client,data.lid);
+               if(myRe==null) return;
+               client.sendEvent("stream",myRe);
+           }
+           else if(data.frame.type.equals("创建")){
+               log.info("创建");
+               //给同一房间的人发
+               List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+               List<JSONObject> nameList0 = new ArrayList(nameList);
+               Result myResult=streamService.create(client,data);
+               for(JSONObject cur:nameList0){ //uid
+                   NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+                   myResult.params.user=redisService.get(u.uid+"User",Usr.class);
+                   socketIOClientMap.get(u.uid).sendEvent("asset",myResult);
+               }
+           }else if(data.frame.type.equals("删除")){
+               log.info("删除"); //拉黑该lid 如果遇到编辑和刷新都无视
+               nowAllMap.put(data.rid+data.lid,JSONObject.parseObject("null"));
+               Usr myUser=redisService.get(data.uid+"User",Usr.class);
+               List<Layout> layouts1 = redisService.get(data.rid+"layout", List.class);
+               List<Layout> layouts=new ArrayList<>(layouts1);
+               Layout myLayout=redisService.get(data.uid + "layout", Layout.class);
+               Iterator<Layout> iterator = layouts.iterator();
+               Layout u0=null;
+               while (iterator.hasNext()) {
+                   u0 = JSON.parseObject(String.valueOf(iterator.next()),Layout.class);
+                   log.info(JSON.toJSONString(u0));
+                   log.info(data.lid);
+                   if (data.lid.equals(u0.lid)) {
+                       iterator.remove();//使用迭代器的删除
+                       break;
+                   }
+               }
+               redisService.set(data.rid + "layout", layouts);
+               log.info("到底删了没"+JSONObject.toJSONString(layouts));
+               if(layouts.size()==0){
+                   List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+                   List<JSONObject> nameList0 = new ArrayList(nameList);
+                   Result myResult=streamService.create(client,data);
+                   String lid=myResult.params.user.lid;
+                   for(JSONObject cur:nameList0){ //uid
+
+                       NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+                       Usr myUsr=redisService.get(u.uid+"User",Usr.class);
+                       myUsr.lid=lid;
+                       redisService.set(u.uid+"User",myUsr);
+                       myResult.params.user=redisService.get(u.uid+"User",Usr.class);
+                       socketIOClientMap.get(u.uid).sendEvent("asset",myResult);
+                   }
+                   layouts1 = redisService.get(data.rid+"layout", List.class);
+                   layouts=new ArrayList<>(layouts1);
+               }
+               // NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+               myUser.lid=JSON.parseObject(JSON.toJSONString(layouts.get(0)),Layout.class).lid;
+               redisService.set(myUser.uid+"User",myUser);
+               Result myResult=new Result();
+               myResult.event="sync";
+               myResult.params.room=redisService.get(data.rid,House.class);
+               myResult.params.user=myUser;
+               myResult.params.layout=layouts;
+               List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+               List<JSONObject> nameList0 = new ArrayList(nameList);
+               client.sendEvent("stream",streamService.refresh(client,myUser.lid));
+               for(JSONObject cur:nameList0){ //uid
+                   NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+                   myResult.params.user=redisService.get(u.uid+"User",Usr.class);
+                   socketIOClientMap.get(u.uid).sendEvent("asset",myResult); //更新房间列表
+                   log.info(redisService.get(u.uid+"User",Usr.class).lid);
+                   log.info(myUser.lid);
+                   if(redisService.get(u.uid+"User",Usr.class).lid.equals(data.lid)||redisService.get(u.uid+"User",Usr.class).lid.equals(myUser.lid)) //有图层在被删图层
+                   socketIOClientMap.get(u.uid).sendEvent("stream",streamService.refresh(socketIOClientMap.get(u.uid),myUser.lid));
+               }
+           }
+           /*
+                   case "删除": {
+                       //群发list
+                       break;
+                   }
+               }
+           }*/
        }
        if(data0.get("event").equals("redo")){
            log.info("redo");
             String uid = socketIOClientMap1.get(client);
             House myHouse=redisService.get(uid+"Room",House.class);
-            if(redoAllMap.get(myHouse.rid)==null) return;
-            if(redoAllMap.get(myHouse.rid).size()==0) return;
-            Map<String,JSONObject> elem=redoAllMap.get(myHouse.rid).pop();
-            Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myHouse.rid);
+            Usr myUsr=redisService.get(uid+"User",Usr.class);
+            if(redoAllMap.get(myHouse.rid+myUsr.lid)==null) return;
+            if(redoAllMap.get(myHouse.rid+myUsr.lid).size()==0) return;
+            Map<String,JSONObject> elem=redoAllMap.get(myHouse.rid+myUsr.lid).pop();
+            Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myHouse.rid+myUsr.lid);
             if(myStack==null) myStack=new Stack<>();
             myStack.push(elem);
-            historyAllMap.put(myHouse.rid,myStack); //可不加
+            historyAllMap.put(myHouse.rid+myUsr.lid,myStack); //可不加
             Refresh  myRefresh=new Refresh();
             myRefresh.uid=uid;
             myRefresh.rid=myHouse.rid;
-
-                nowAllMap.put(myHouse.rid,(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek()));
-                myRefresh.frame=(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek());
-                log.info("栈的顶部，即当前应该显示的内容"+JSONObject.toJSONString(historyAllMap.get(myHouse.rid).peek()));
-
+            nowAllMap.put(myHouse.rid+myUsr.lid,(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid+myUsr.lid).peek()));
+            myRefresh.frame=(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid+myUsr.lid).peek());
+            log.info("栈的顶部，即当前应该显示的内容"+JSONObject.toJSONString(historyAllMap.get(myHouse.rid+myUsr.lid).peek()));
             List<JSONObject> nameList=redisService.get(myHouse.rid+"nameList",List.class);
             List<JSONObject> nameList0 = new ArrayList(nameList);
-            for(JSONObject cur:nameList0){ //uid
-                NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
-                log.info(u.uid);
-                myRefresh.uid=u.uid;
-                log.info("向房间里所有人发送的内容"+JSONObject.toJSONString(myRefresh));
-                socketIOClientMap.get(u.uid).sendEvent("stream",myRefresh);
-            }
+           for(JSONObject cur:nameList0){ //uid
+               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+               log.info(u.uid);
+               myRefresh.uid=u.uid;
+               if(redisService.get(u.uid+"User",Usr.class).lid.equals(myUsr.lid)){
+                   myRefresh.lid=myUsr.lid;
+                   log.info("向房间里所有人发送的内容"+JSONObject.toJSONString(myRefresh));
+                   socketIOClientMap.get(u.uid).sendEvent("stream",myRefresh);
+               }
+           }
        }
        if(data0.get("event").equals("undo")){
            log.info("undo");
            String uid = socketIOClientMap1.get(client);
            House myHouse=redisService.get(uid+"Room",House.class);
-           if(historyAllMap.get(myHouse.rid)==null) return;
-           if(historyAllMap.get(myHouse.rid).size()==0) return;
-           log.info(historyAllMap.get(myHouse.rid).size()+" ");
-           log.info("回撤前的历史记录"+historyAllMap.get(myHouse.rid));
-           Map<String,JSONObject> elem=historyAllMap.get(myHouse.rid).pop();
-           Stack<Map<String,JSONObject>> myStack=redoAllMap.get(myHouse.rid);
+           Usr myUsr=redisService.get(uid+"User",Usr.class);
+           if(historyAllMap.get(myHouse.rid+myUsr.lid)==null) return;
+           if(historyAllMap.get(myHouse.rid+myUsr.lid).size()==0) return;
+           log.info(historyAllMap.get(myHouse.rid+myUsr.lid).size()+" ");
+           log.info("回撤前的历史记录"+historyAllMap.get(myHouse.rid+myUsr.lid));
+           Map<String,JSONObject> elem=historyAllMap.get(myHouse.rid+myUsr.lid).pop();
+           Stack<Map<String,JSONObject>> myStack=redoAllMap.get(myHouse.rid+myUsr.lid);
            if(myStack==null) myStack=new Stack<>();
            myStack.push(elem);
-           redoAllMap.put(myHouse.rid,myStack);
+           redoAllMap.put(myHouse.rid+myUsr.lid,myStack);
            //更新当前帧
            //让它去调用refresh
            Refresh  myRefresh=new Refresh();
            myRefresh.uid=uid;
            myRefresh.rid=myHouse.rid;
-           log.info("回撤后的历史记录"+historyAllMap.get(myHouse.rid));
-           if(historyAllMap.get(myHouse.rid).size()==0) //
+           log.info("回撤后的历史记录"+historyAllMap.get(myHouse.rid+myUsr.lid));
+           if(historyAllMap.get(myHouse.rid+myUsr.lid).size()==0) //
            {
-               myRefresh.frame=null;
-              // log.info(myRefresh.frame.toJSONString());
-              // log.info(JSONObject.toJSONString(myRefresh));
-               nowAllMap.put(myHouse.rid,null);
+               myRefresh.frame=new JSONObject();
+               nowAllMap.put(myHouse.rid+myUsr.lid,new JSONObject());
            }else{
-               nowAllMap.put(myHouse.rid,(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek()));
-               myRefresh.frame=(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid).peek());
-               log.info("栈的顶部，即当前应该显示的内容"+JSONObject.toJSONString(historyAllMap.get(myHouse.rid).peek()));
+               nowAllMap.put(myHouse.rid+myUsr.lid,(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid+myUsr.lid).peek()));
+               myRefresh.frame=(JSONObject) JSONObject.toJSON(historyAllMap.get(myHouse.rid+myUsr.lid).peek());
+               log.info("栈的顶部，即当前应该显示的内容"+JSONObject.toJSONString(historyAllMap.get(myHouse.rid+myUsr.lid).peek()));
            }
            List<JSONObject> nameList=redisService.get(myHouse.rid+"nameList",List.class);
            List<JSONObject> nameList0 = new ArrayList(nameList);
@@ -192,9 +269,13 @@ public class MessageEventHandler {
                NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
                    log.info(u.uid);
                    myRefresh.uid=u.uid;
+               if(redisService.get(u.uid+"User",Usr.class).lid.equals(myUsr.lid)){
+                   myRefresh.lid=myUsr.lid;
                    log.info("向房间里所有人发送的内容"+JSONObject.toJSONString(myRefresh));
                    socketIOClientMap.get(u.uid).sendEvent("stream",myRefresh);
+               }
            }
+
 
        }
        if(data0.get("event").equals("edit")){
@@ -207,6 +288,9 @@ public class MessageEventHandler {
            }
            if(myQueue.size()>0&&Long.valueOf(myQueue.getFirst().frame.pixel.get("date").toString())>dateNext){
                return;
+           }
+           if(nowAllMap.get(data.rid+data.lid).toString().equals(JSONObject.parseObject("null").toString())){
+               return ;
            }
            myQueue.add(data);
            log.info("myQueue.size()"+String.valueOf(myQueue.size()));
@@ -223,7 +307,7 @@ public class MessageEventHandler {
            Istream myData=new Istream();
            myData=myQueue.removeLast();
            //all是该房间的全量帧 由一个个gid对应的pixel组成
-           Map<String,JSONObject> all=JSON.toJavaObject(nowAllMap.get(myData.rid),Map.class);
+           Map<String,JSONObject> all=JSON.toJavaObject(nowAllMap.get(myData.rid+myData.lid),Map.class);
            if(all==null) all=new HashMap<>();
            //log.info(all.toString());
            //这里需要缓存之前的gid
@@ -241,32 +325,33 @@ public class MessageEventHandler {
            if(all.get(myData.frame.pixel.get("gid").toString())!=null&&!myData.syn){
                f=false;
            }
-           Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myData.rid);
+           Stack<Map<String,JSONObject>> myStack=historyAllMap.get(myData.rid+myData.lid);
            log.info(JSONObject.toJSONString(myStack));
            if(myStack==null)//该房间还未有历史记录
            {myStack=new Stack<>();
-           historyAllMap.put(myData.rid, myStack);
+           historyAllMap.put(myData.rid+myData.lid, myStack);
            }
            if(f) {
-               log.info("当前的历史记录大小"+historyAllMap.get(myData.rid).size());
+               log.info("当前的历史记录大小"+historyAllMap.get(myData.rid+myData.lid).size());
                log.info("当前的历史记录"+myStack);
                Map<String,JSONObject> all0=new HashMap<>();
                ObjectMapper objectMapper=new ObjectMapper();
                all0=objectMapper.readValue(objectMapper.writeValueAsString(all),Map.class); //历史记录相当于无这个pixel
                myStack.push(all0);
                log.info("加入后的历史记录1"+myStack);
-               log.info("加入后的历史记录大小1 "+String.valueOf(historyAllMap.get(myData.rid).size()));
-               historyAllMap.put(myData.rid, myStack);  //引用类型，不用put
-               log.info("加入后的历史记录2"+historyAllMap.get(myData.rid));
-               log.info("加入后的历史记录大小2 "+String.valueOf(historyAllMap.get(myData.rid).size()));
+               log.info("加入后的历史记录大小1 "+String.valueOf(historyAllMap.get(myData.rid+myData.lid).size()));
+               log.info("加入后的历史记录2"+historyAllMap.get(myData.rid+myData.lid));
+               log.info("加入后的历史记录大小2 "+String.valueOf(historyAllMap.get(myData.rid+myData.lid).size()));
            }
            log.info("put"+myData.rid);
-           nowAllMap.put(myData.rid, (JSONObject) JSONObject.toJSON(all));
+           nowAllMap.put(myData.rid+myData.lid, (JSONObject) JSONObject.toJSON(all));
            pre=Long.valueOf(myData.frame.pixel.get("date").toString());
           for(JSONObject cur:nameList0){ //uid
               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
               //Thread.sleep(1000);
-              if(!u.uid.equals(myData.uid)){
+              log.info(redisService.get(u.uid+"User",Usr.class).lid);
+              log.info(myData.lid);
+              if(!u.uid.equals(myData.uid)&&redisService.get(u.uid+"User",Usr.class).lid.equals(myData.lid)){
                   log.info(u.uid);
                   log.info(JSON.toJSONString(myData));
                   socketIOClientMap.get(u.uid).sendEvent("stream",myData);
