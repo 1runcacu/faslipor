@@ -11,6 +11,7 @@ fastclip/domain/Query.class
 fastclip/domain/Param.class
 fastclip/config/WebMvcConfig.class
 fastclip/redis/RedisPoolFactory.class
+fastclip/domain/Usr.class
 fastclip/NettySocketioApplication.class
 fastclip/Service/StreamService.class
 fastclip/domain/Redirect.class
@@ -24,6 +25,6 @@ fastclip/domain/Result.class
 fastclip/config/NettySocketioConfig.class
 fastclip/domain/Refresh.class
 fastclip/redis/RedisService.class
+fastclip/domain/Layout.class
 fastclip/server/MessageEventHandler.class
-fastclip/domain/User.class
 fastclip/domain/Message.class

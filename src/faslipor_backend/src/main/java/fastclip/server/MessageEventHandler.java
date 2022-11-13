@@ -104,15 +104,42 @@ public class MessageEventHandler {
         //sendBroadcast();
     }
 
-//event,rid,uid,lid,frame:roomBuffer[rid]
+    @OnEvent(value = "file")
+    public void onFile(SocketIOClient client, AckRequest request, JSONObject data0){
+        log.info("file");
+        log.info(""+""+JSONObject.toJSONString(data0));
+        if(data0.get("event").equals("refresh")){
+          Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
+            log.info(data.frame.file);
+          nowAllMap.put(data.rid+data.lid, JSONObject.parseObject(JSON.toJSONString(JSONObject.parseObject(data.frame.file).get("pixel"))));
+            List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+            List<JSONObject> nameList0 = new ArrayList(nameList);
+            //client.sendEvent("stream",streamService.refresh(client,data.lid));
+            for(JSONObject cur:nameList0){ //uid
+                NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+                if(redisService.get(u.uid+"User",Usr.class).lid.equals(data.lid)) //有图层在被删图层
+                    socketIOClientMap.get(u.uid).sendEvent("stream",streamService.refresh(socketIOClientMap.get(u.uid),data.lid));
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
     @OnEvent(value="stream")
     public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException, IOException {
        log.info("stream");
        log.info(""+""+JSONObject.toJSONString(data0));
-       if(data0.get("event").equals("save")){
-           log.info("save");
-           client.sendEvent("message",streamService.save(client,request,data0));
+       if(data0.get("event").equals("export")){
+           log.info("export");
+           client.sendEvent("file",streamService.save(client,request,data0));
        }
+
        if(data0.get("event").equals("refresh")) {
            log.info("refresh");
            Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
@@ -139,7 +166,7 @@ public class MessageEventHandler {
                }
            }else if(data.frame.type.equals("删除")){
                log.info("删除"); //拉黑该lid 如果遇到编辑和刷新都无视
-               nowAllMap.put(data.rid+data.lid,JSONObject.parseObject("null"));
+               nowAllMap.put(data.rid+data.lid,null);
                Usr myUser=redisService.get(data.uid+"User",Usr.class);
                List<Layout> layouts1 = redisService.get(data.rid+"layout", List.class);
                List<Layout> layouts=new ArrayList<>(layouts1);
@@ -289,7 +316,7 @@ public class MessageEventHandler {
            if(myQueue.size()>0&&Long.valueOf(myQueue.getFirst().frame.pixel.get("date").toString())>dateNext){
                return;
            }
-           if(nowAllMap.get(data.rid+data.lid).toString().equals(JSONObject.parseObject("null").toString())){
+           if(nowAllMap.get(data.rid+data.lid)==null){
                return ;
            }
            myQueue.add(data);

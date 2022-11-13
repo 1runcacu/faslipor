@@ -26,14 +26,13 @@ public class StreamService {
     @Autowired
     RedisService redisService;
 
-   public Message save(SocketIOClient client, AckRequest request, JSONObject data0) throws IOException {
+   public fastclip.domain.File save(SocketIOClient client, AckRequest request, JSONObject data0) throws IOException {
        String uid = socketIOClientMap1.get(client);
        House myRoom = redisService.get(uid + "Room", House.class);
-       if(!nowAllMap.containsKey(myRoom.rid)) return null;
+       if(!nowAllMap.containsKey(myRoom.rid+data0.get("lid"))) return null;
        //部署时注意这里需要改
-       Message message=new Message();
-       message.type="info";
-       String filePath="/www/web/app/Room";
+       fastclip.domain.File newFile=new fastclip.domain.File();
+       String filePath="/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/resources/Room";
        File dir=new File(filePath);
        if(!dir.exists()){
            dir.mkdirs();
@@ -45,7 +44,7 @@ public class StreamService {
                checkFile.createNewFile();
            }
            writer=new FileWriter(checkFile,false);
-           writer.append(JSON.toJSONString(nowAllMap.get(myRoom.rid)));
+           writer.append(JSON.toJSONString(nowAllMap.get(myRoom.rid+data0.get("lid"))));
            writer.flush();
        } catch (IOException e) {
            e.printStackTrace();
@@ -53,9 +52,10 @@ public class StreamService {
            if(null!=writer)
                writer.close();
        }
-       message.message="/Room"+"/"+uid+".fsl";
-       log.info(JSON.toJSONString(message));
-       return message;
+       newFile.url="http://127.0.0.1:8101/Room"+"/"+uid+".fsl";
+       newFile.name=uid+".fsl";
+       log.info(JSONObject.toJSONString(newFile));
+       return newFile;
    }
 
    public Refresh refresh(SocketIOClient client, String data){
@@ -65,17 +65,14 @@ public class StreamService {
        myUser.lid=data;
        redisService.set(uid+"User",myUser);
        if(!nowAllMap.containsKey(myRoom.rid+myUser.lid)) return null;
-       if(nowAllMap.get(myRoom.rid+myUser.lid).toString().equals(JSONObject.parseObject("null").toString())){
-           return null;
-       }
        Refresh myRe=new Refresh();
        myRe.rid=myRoom.rid;
        myRe.uid=uid;
        myRe.lid=myUser.lid;
-       if(nowAllMap.get(myRoom.rid+myUser.lid)==null)
-       {myRe.frame=new JSONObject();
-       nowAllMap.put(myRoom.rid+myUser.lid,myRe.frame);
-       }else{
+       if(nowAllMap.get(myRoom.rid+myUser.lid)==null) {
+           return null;
+       }
+       else{
            myRe.frame=nowAllMap.get(myRoom.rid+myUser.lid);
        }
        log.info(JSONObject.toJSONString(myRe));
@@ -87,7 +84,7 @@ public class StreamService {
        myLayout.lid = ((Long) time0.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
        myLayout.name = data.frame.name;
        if(myLayout.name==null) myLayout.name="sheet";
-       nowAllMap.put(data.rid + myLayout.lid , null);
+       nowAllMap.put(data.rid + myLayout.lid , new JSONObject());
        List<Layout> layouts1 = redisService.get(data.rid+"layout", List.class);
        List<Layout> layouts=new ArrayList<>(layouts1);
        log.info(JSONObject.toJSONString(layouts));

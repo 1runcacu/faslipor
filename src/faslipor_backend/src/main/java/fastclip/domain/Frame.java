@@ -9,4 +9,5 @@ public class  Frame {
     public String type;
     public String name;
     public JSONObject pixel;
+    public String file;
 }
