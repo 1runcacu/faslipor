@@ -103,6 +103,19 @@ public class MessageEventHandler {
         //广播消息
         //sendBroadcast();
     }
+   @OnEvent(value = "console")
+   public void onConsole(SocketIOClient client, AckRequest request, JSONObject data0){
+        log.info("console");
+       Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
+       if(data0.get("event").equals("lock")){
+           log.info("lock");
+          House myHouse=redisService.get(data.rid,House.class);
+          myHouse.lock=true;
+          redisService.set(data.rid,myHouse);
+       }
+       return;
+   }
+
 
     @OnEvent(value = "file")
     public void onFile(SocketIOClient client, AckRequest request, JSONObject data0){
@@ -122,15 +135,6 @@ public class MessageEventHandler {
             }
         }
     }
-
-
-
-
-
-
-
-
-
     @OnEvent(value="stream")
     public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException, IOException {
        log.info("stream");
@@ -143,19 +147,24 @@ public class MessageEventHandler {
        if(data0.get("event").equals("refresh")) {
            log.info("refresh");
            Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
-
-           if(data.frame.type==null) //刚进入
+           if(data.frame.type==null||data.frame.type.equals("切换")) //刚进入
            {  Refresh myRe=streamService.refresh(client,data.lid);
                if(myRe==null) return;
+               if(redisService.get(data.rid,House.class).lock){
+                   List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+                   List<JSONObject> nameList0 = new ArrayList(nameList);
+                   for(JSONObject cur:nameList0){ //uid
+                       NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+                       myRe.uid=redisService.get(u.uid+"User",Usr.class).uid;
+                       socketIOClientMap.get(u.uid).sendEvent("stream",myRe);
+                   }
+               }else{
                client.sendEvent("stream",myRe);}
-           else if(data.frame.type.equals("切换")){
-               Refresh myRe=streamService.refresh(client,data.lid);
-               if(myRe==null) return;
-               client.sendEvent("stream",myRe);
            }
            else if(data.frame.type.equals("创建")){
                log.info("创建");
                //给同一房间的人发
+               if(redisService.get(data.rid,House.class).lock) return;
                List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
                List<JSONObject> nameList0 = new ArrayList(nameList);
                Result myResult=streamService.create(client,data);
@@ -166,6 +175,7 @@ public class MessageEventHandler {
                }
            }else if(data.frame.type.equals("删除")){
                log.info("删除"); //拉黑该lid 如果遇到编辑和刷新都无视
+               if(redisService.get(data.rid,House.class).lock) return;
                nowAllMap.put(data.rid+data.lid,null);
                Usr myUser=redisService.get(data.uid+"User",Usr.class);
                List<Layout> layouts1 = redisService.get(data.rid+"layout", List.class);
@@ -234,6 +244,7 @@ public class MessageEventHandler {
            log.info("redo");
             String uid = socketIOClientMap1.get(client);
             House myHouse=redisService.get(uid+"Room",House.class);
+            if(myHouse.lock) return;
             Usr myUsr=redisService.get(uid+"User",Usr.class);
             if(redoAllMap.get(myHouse.rid+myUsr.lid)==null) return;
             if(redoAllMap.get(myHouse.rid+myUsr.lid).size()==0) return;
@@ -265,6 +276,7 @@ public class MessageEventHandler {
            log.info("undo");
            String uid = socketIOClientMap1.get(client);
            House myHouse=redisService.get(uid+"Room",House.class);
+           if(myHouse.lock) return;
            Usr myUsr=redisService.get(uid+"User",Usr.class);
            if(historyAllMap.get(myHouse.rid+myUsr.lid)==null) return;
            if(historyAllMap.get(myHouse.rid+myUsr.lid).size()==0) return;
@@ -309,6 +321,7 @@ public class MessageEventHandler {
            log.info("edit");
            Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
            //查看时间戳比队尾的大才加，否则扔掉
+           if(redisService.get(data.rid,House.class).lock) return;
            Long dateNext= Long.valueOf(data.frame.pixel.get("date").toString());
            if(myQueue.size()==0&&dateNext<pre){
            return;

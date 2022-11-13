@@ -22,6 +22,7 @@ fastclip/Service/QueryService.class
 fastclip/domain/Style.class
 fastclip/domain/Pixel.class
 fastclip/domain/Result.class
+fastclip/domain/File.class
 fastclip/config/NettySocketioConfig.class
 fastclip/domain/Refresh.class
 fastclip/redis/RedisService.class

@@ -32,7 +32,7 @@ public class StreamService {
        if(!nowAllMap.containsKey(myRoom.rid+data0.get("lid"))) return null;
        //部署时注意这里需要改
        fastclip.domain.File newFile=new fastclip.domain.File();
-       String filePath="/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/resources/Room";
+       String filePath="/www/web/app/Room";
        File dir=new File(filePath);
        if(!dir.exists()){
            dir.mkdirs();
@@ -52,7 +52,7 @@ public class StreamService {
            if(null!=writer)
                writer.close();
        }
-       newFile.url="http://127.0.0.1:8101/Room"+"/"+uid+".fsl";
+       newFile.url="http://43.143.130.52:8101/Room"+"/"+uid+".fsl";
        newFile.name=uid+".fsl";
        log.info(JSONObject.toJSONString(newFile));
        return newFile;
