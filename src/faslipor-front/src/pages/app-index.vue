@@ -87,7 +87,7 @@ const handleSendMessage = (evt) => {
         cancelButtonText: "取消",
       })
     .then(v=>{
-      console.log(evt)
+      // console.log(evt)
       // router.push({name:"panel"});
       lockHandle();
       socket.emit("query",{

@@ -8,7 +8,8 @@
         <div class="body">
             <el-scrollbar class="left">
                 <el-menu
-                    default-active="2"
+                    @select="selectItems"
+                    default-active="1"
                     class="el-menu-vertical-demo"
                     :collapse="true"
                     background-color="rgba(255,255,255,0)"
@@ -33,9 +34,34 @@
                     </el-menu-item>
                 </el-menu>
             </el-scrollbar>
-            <el-scrollbar class=right>
-                <div v-for="i in 100">{{i}}</div>
-            </el-scrollbar>
+            <!-- <el-scrollbar class=right>
+                <vueChatVue/>
+            </el-scrollbar> -->
+            <vueChatVue class="right" v-show="select=='1'"/>
+            <div v-show="select=='2'" class="right">
+                控制键盘-》》》疯狂搬砖中ing...
+            </div>
+            <div v-show="select=='3'" class="right">
+                高级管理-》》》疯狂搬砖中ing...
+            </div>
+            <div v-show="select=='4'" class="right">
+                <div style="margin:10px">
+                    <el-button type="primary" 
+                    v-if="!config.room.lock"
+                    :disabled="config.user.state!=='管理员'"
+                    @click="ctrlHandle(true)"
+                    >
+                        只读模式
+                    </el-button>
+                    <el-button type="primary" 
+                    v-if="config.room.lock"
+                    :disabled="config.user.state!=='管理员'"
+                    @click="ctrlHandle(false)"
+                    >
+                        协作模式
+                    </el-button>
+                </div>
+            </div>
         </div>
     </winUiVue>
 </template>
@@ -50,16 +76,17 @@ import {
     ChatDotRound,
     Setting
 } from '@element-plus/icons-vue'
+import vueChatVue from './vue-chat.vue';
+import { useStore } from 'vuex';
 
+const store = useStore();
 const socket = inject("socket");
 
-const message = data=>{
-    const {rid,uid,event,frame} = data;
-    try{
-        switch(event){
-            case "":
-        }
-    }catch(err){}
+const select = ref("1");
+var config = computed(()=>store.state.params||{room:{},user:{},layout:[]});
+
+const console = data=>{
+
 }
 
 const emit = defineEmits(["open","test"]);
@@ -70,6 +97,20 @@ const props = defineProps({
         default:true
     }
 });
+
+const ctrlHandle = (v)=>{
+    const {room:{rid},user:{uid,lid}} = config.value;
+    socket.emit("console",{
+        rid,uid,lid,event:"lock",
+        frame:{
+            lock:v
+        }
+    });
+}
+
+const selectItems = (index)=>{
+    select.value = index;
+}
 
 const title = ref("控制台");
 
@@ -87,11 +128,11 @@ const closeWin = ()=>{
 }
 
 onMounted(()=>{
-    socket.on("stream",message);
+    socket.on("console",console);
 });
 
 onUnmounted(()=>{
-    socket.off("stream",message);
+    socket.off("console",console);
 });
 
 const WH = computed(()=>(window.innerWidth>500?500:window.innerWidth)+"px");

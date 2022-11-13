@@ -5,6 +5,8 @@ const socketIO = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const fs = require('fs');
+
+// const dlHost = `http://127.0.0.1:8099/static`;
 const dlHost = `http://43.143.130.52:8099/static`;
 
 //redis
@@ -37,6 +39,7 @@ const users = {};
 const rooms = {};
 const roomsUsers = {};
 const roomBuffer = {};
+const messageBuffer = {};
 const actionBuffer = {};
 const layoutBuffer = {};
 const sockets = {};
@@ -77,10 +80,12 @@ function createRoom(socket,params){
     description,
     state:true,
     limit:10,
-    stats:1
+    stats:1,
+    lock:false
   };
   rooms[rid] = room;
   roomBuffer[rid] = {};
+  messageBuffer[rid] = [];
   roomBuffer[rid][lid] = {};
   mirror[rid] = {};
   mirror[rid][lid] = {};
@@ -146,6 +151,7 @@ function exitRoom(socket,params){
     delete actionBuffer[rid];
     delete layoutBuffer[rid];
     delete mirror[rid];
+    delete messageBuffer[rid];
   }
   goto(socket,"/",{});
 }
@@ -178,6 +184,12 @@ function broadCastRoomUsers(rid,data){
   })
 }
 
+function consoleRoomAllUsers(rid,data){
+  Object.values(roomsUsers[rid]).forEach(user=>{
+    user.socket.emit("console",data);
+  })
+}
+
 function broadCastAsset(rid,dlid){
   const room = rooms[rid];
   let layout = Object.values(layoutBuffer[rid]);
@@ -207,6 +219,37 @@ function broadCastAsset(rid,dlid){
         }
       });
     }
+  }
+}
+
+function broadCastAssettoAll(rid,llid){
+  const room = rooms[rid];
+  let layout = Object.values(layoutBuffer[rid]);
+  for(let uid in roomsUsers[rid]){
+    let user = roomsUsers[rid][uid];
+    const {state} = user;
+    if(llid){
+      user.lid = llid;
+    }
+    user.socket.emit("asset",{
+      event:"sync",
+      params:{
+        room,user:{
+          uid,state,lid:user.lid
+        },
+        layout
+      }
+    });
+    if(llid){
+      refresh(user.socket,rid,llid,uid);
+    }
+  }
+}
+
+function syncUserPage(rid,lid){
+  for(let uid in roomsUsers[rid]){
+    let user = roomsUsers[rid][uid];
+    refresh(user.socket,rid,lid,uid);
   }
 }
 
@@ -265,7 +308,7 @@ function synRoom(rid,uid,lid,dlid){
   }
 }
 
-function layoutRefesh(socket,rid,uid,lid,frame){
+function layoutRefesh(socket,rid,uid,lid,frame,lock){
   let {name,type} = frame;
   if(lid){
     if(type==="删除"){
@@ -284,10 +327,14 @@ function layoutRefesh(socket,rid,uid,lid,frame){
       synRoom(rid,uid,lid,dlid);
       return;
     }else{
-      let user = roomsUsers[rid][uid];
-      user.lid = lid;
-      // console.log(lid);
-      refresh(socket,rid,lid,uid);
+      if(lock){
+        syncUserPage(rid,lid);
+      }else{
+        let user = roomsUsers[rid][uid];
+        user.lid = lid;
+        // console.log(lid);
+        refresh(socket,rid,lid,uid);
+      }
       return;
     }
   }else{
@@ -325,6 +372,7 @@ function screenshot(rid,lid){
   }
   mirror[rid][lid].history.push(scshot);
   if(mirror[rid][lid].history.length>10)mirror[rid][lid].history.shift();
+  // console.log(rid,lid,"截图成功-",mirror[rid][lid].history.length);
   mirror[rid][lid].back.length = 0;
 }
 
@@ -420,6 +468,42 @@ function makeAct(socket,event,rid,lid,uid,frame){
   }
 }
 
+function applyLid(socket,rid,uid,lid,frame){
+  const {file} = frame;
+  const {pixel,action} = JSON.parse(file);
+  roomBuffer[rid][lid] = pixel||{};
+  actionBuffer[rid][lid] = action||{};
+  broadCastRoomUsers(rid,{
+    event:"refresh",rid,lid,
+    frame:roomBuffer[rid][lid]||{}
+  });
+}
+
+function lockRoom(socket,rid,uid,lid,frame){
+  const user = roomsUsers[rid][uid];
+  // const pack = {
+  //   rid,uid,event:"refresh"
+  // };
+  const {lock} = frame;
+  if(user.state==='管理员'){
+    rooms[rid].lock = lock;
+    // consoleRoomAllUsers(rid,pack);
+    broadCastAssettoAll(rid,lid);
+  }else{
+    message(socket,"没有权限","error");
+  }
+}
+
+function messageToAllUser(rid,uuid,event,frame){
+  messageBuffer[rid].push(frame);
+  for(let uid in roomsUsers[rid]){
+    let user = roomsUsers[rid][uid];
+    user.socket.emit("chat",{
+      rid,uid:uuid,event,frame
+    });
+  }
+}
+
 io.on('connection',(socket) => {
     const id = ID();
     console.log(`${id}上线`);
@@ -439,12 +523,12 @@ io.on('connection',(socket) => {
     });
     socket.on('stream',data=>{
       try{
-        const {event,rid,uid,lid,frame,syn} = data;
+        const {event,rid,uid,lid,frame,syn,lock} = data;
         switch(event){
           // case "increment"://broadCastRoomUsers(rid,data);break;
           // case "all":broadCastRoomUsers(rid,data);break;
           case "edit":broadCastRoomUsers(rid,record(rid,lid,uid,frame,syn));break;
-          case "refresh":layoutRefesh(socket,rid,uid,lid,frame);break;
+          case "refresh":layoutRefesh(socket,rid,uid,lid,frame,lock);break;
           default:
             makeAct(socket,event,rid,lid,uid,frame);
             break;
@@ -453,6 +537,37 @@ io.on('connection',(socket) => {
         console.log(err);
       }
     });
+    socket.on('file',data=>{
+      try{
+        const {event,rid,uid,lid,frame,syn} = data;
+        switch(event){
+          case "refresh":applyLid(socket,rid,uid,lid,frame);break;
+        }
+      }catch(err){
+        console.log(err);
+      }
+    })
+    socket.on('console',data=>{
+      try{
+        const {event,rid,uid,lid,frame,syn} = data;
+        switch(event){
+          case "lock":lockRoom(socket,rid,uid,lid,frame);break;
+        }
+      }catch(err){
+        console.log(err);
+      }
+    })
+    socket.on('chat',data=>{
+      try{
+        const {event,rid,uid,frame,syn} = data;
+        switch(event){
+          case "refresh":socket.emit("chat",{uid,rid,event,frame:{data:messageBuffer[rid]}});break;
+          default:messageToAllUser(rid,uid,event,frame);break;
+        }
+      }catch(err){
+        console.log(err);
+      }
+    })
     socket.on('message',(data) => {
         console.log(data);
         message(socket,data);

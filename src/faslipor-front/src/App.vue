@@ -21,14 +21,14 @@ const router = useRouter();
 const store = useStore();
 
 socket.on("message", (res={}) => {
-    console.log("message:",res);
+    // console.log("message:",res);
     ctx.$message(res);
 });
 
 socket.on("asset", (res={}) => {
     const {event,data,params} = res;
     switch(event){
-      case "list":store.commit("setRooms",data);console.log("asset:",res);break;
+      case "list":store.commit("setRooms",data);break;//console.log("asset:",res);
       case "sync":
         console.log(params);
         store.commit("setParams",params);break;
@@ -42,7 +42,7 @@ socket.on("file",(res={})=>{
       confirmButtonText: "确定",
       cancelButtonText: "取消",
   }).then(()=>{
-      console.log(name,url);
+      // console.log(name,url);
       download(name,url);
   }).catch(err=>{
     console.log(err);
@@ -68,7 +68,7 @@ socket.on("reconnect",res=>{
 });
 
 socket.on("redirect", (res={}) => {
-    console.log("redirect:",res);
+    // console.log("redirect:",res);
     try{
       if(/panel/.test(res.path)){
         const {user:{uid}} = res.params;

@@ -82,16 +82,56 @@ export function fireKeyEvent(el, evtType, keyCode){
 }
 
 export function download(name,url){
-    // AJAX.get(url).then(v=>{
-    //     console.log(v);
-    // });    
-    // let url=URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.setAttribute("download",name);
     a.setAttribute("href",url);
     a.click();
     URL.revokeObjectURL(a.href);
     a.remove();
+}
+
+export function uploader(){
+    const input = document.createElement("input");
+    input.setAttribute("type","file");
+    input.setAttribute("accept",".fsl");
+    return new Promise((resolve,reject)=>{
+        input.onchange = function(e){
+            try{
+                // console.log(e.target);
+                // const file = e.files;
+                // console.log(file);
+                // if(window.FileReader){
+                //     const file = e.files[0];
+                //     let reader = new FileReader();
+                //     reader.onload=function(){
+                //         console.log(reader.result);
+                //     }
+                //     reader.readAsText(file);
+                // }
+            }catch(error){
+                console.log(error);
+            }
+        };
+        input.click();
+    })
+}
+
+export function loader(file){
+    return new Promise((resolve,reject)=>{
+        if(window.FileReader){
+            if(file[0]){
+                let reader = new FileReader();
+                reader.onload=function(){
+                    resolve(reader.result);
+                }
+                reader.readAsText(file[0]);
+            }else{
+                reject();
+            }
+        }else{
+            reject();
+        }
+    });
 }
 
 export default {

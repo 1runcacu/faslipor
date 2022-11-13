@@ -71,7 +71,7 @@ export default{
     props:{
         lineWidth:Number,
         fontSize:String,
-        fontColor:String,
+        fontColor:String
     },
     methods:{
         reset(lw,fs,fc){

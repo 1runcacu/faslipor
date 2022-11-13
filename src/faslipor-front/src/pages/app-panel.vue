@@ -1,5 +1,6 @@
 <template>
     <div id="box">
+        <input ref="upload" type="file" @change="handleFiles" accept=".fsl" v-show="false"/>
         <div class="header">
             <el-page-header @back="onBack">
                 <template #content>
@@ -44,11 +45,11 @@
                                 :value="item.lid"
                             />
                         </select>
-                        <el-button type="danger" :icon="Delete" @click="delLayout" circle/>
+                        <el-button type="danger" :icon="Delete" @click="delLayout" circle :disabled="LOCK"/>
                     </div>
                     <div class="ipt-name">
                         <input placeholder="请输入图层名称" v-model="Lyname"/>
-                        <el-button type="success" :icon="Check" circle :disabled="nameUseable" @click="catLayout"/>
+                        <el-button type="success" :icon="Check" circle :disabled="nameUseable||LOCK" @click="catLayout"/>
                     </div>
                 </div>
                 <!-- <div class="icons">
@@ -61,19 +62,20 @@
                 </div>
             </el-collapse-item>
             <el-collapse-item title="样式表" name="3">
-                <div>
-
+                <div :key="UPDATE">
+                    <div v-for="item in styleSheet"><b>{{item.name}}:</b>&nbsp;{{item.value}}<br/></div>
                 </div>
             </el-collapse-item>
             <el-collapse-item title="更多信息" name="4">
                 <div>
-                Decision making: giving advices about operations is acceptable, but do
-                not make decisions for the users;
+                    <div v-for="(item,key) of config.room">
+                        <b>{{code_room[key]}}:</b>{{item}}<br/>
+                    </div>
                 </div>
                 <div>
-                Controlled consequences: users should be granted the freedom to
-                operate, including canceling, aborting or terminating current
-                operation.
+                    <div v-for="(item,key) of config.user">
+                        <b>{{code_user[key]}}:</b>{{item}}<br/>
+                    </div>
                 </div>
             </el-collapse-item>
             </el-collapse>
@@ -100,24 +102,48 @@ import vueConsoleVue from '@/components/vue-console.vue';
 import vueOpener from '@/components/vue-opener.vue'
 import vueEditVue from '@/components/vue-edit.vue';
 import { useStore } from 'vuex';
-import {throttle,shakeProof} from "@/api/util";
+import {throttle,shakeProof,loader} from "@/api/util";
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
+
+const upload = ref(null);
 
 const socket = inject("socket");
 const store = useStore();
 const router = useRouter();
 
+const code_room = ref({
+    "rid":"房间ID",
+    "uid":"用户ID",
+    "name":"名称",
+    "description":"简介",
+    "state":"可加入",
+    "limit":"最大人数",
+    "stats":"用户数",
+    "lid":"图层ID",
+    "lock":"只读模式"
+});
+
+const code_user = ref({
+    "uid":"用户ID",
+    "lid":"图层ID",
+    "state":"管理员"
+});
+
 let FIRST = true;
 
 var config = computed(()=>store.state.params||{room:{},user:{},layout:[]});
 
+let lock = false;
+
+const LOCK = computed(()=>config.value.room.lock);
+
+watch(()=>[LOCK.value],p=>{
+    lock = p[0]||false;
+});
+
 const onBack = () => {
-    try{
-        router.go(-1);
-    }catch(err){
-        router.push({path:"/"});
-    }
+    router.push({name:"index"});
 }
 
 const Lyname = ref("Sheet");
@@ -140,9 +166,11 @@ watch(
 );
 
 const LChangeHandle = ()=>{
+    // if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
     layoutID.value&&setLayout(layoutID.value);
 }
 const delLayout = ()=>{
+    if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
     let lid = config.value.user.lid;
     let name = config.value.layout.find(v=>v.lid===lid).name||"";
     if(!name)return;
@@ -154,6 +182,7 @@ const delLayout = ()=>{
     }).catch(()=>{});
 }
 const catLayout = ()=>{
+    if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
     let name = Lyname.value;
     let lot = config.value.layout.find(v=>v.name===name);
     let hint = "创建";
@@ -171,6 +200,8 @@ const catLayout = ()=>{
         }
     }).catch(()=>{});
 };
+
+const UPDATE = ref("");
 
 const zindex = ref(0);
 
@@ -230,6 +261,7 @@ const toolsConfig = ref({
 let ctrlFlag = false;
 
 const kd = (v,state=false)=>{
+    if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
     switch(v){
         case 13:
             let obj = canvas.getActiveObject();
@@ -257,24 +289,46 @@ const editHandle =(e,data)=>{
             setCvsZoom(-0.05);
             break;
         case "复制":
-            ctx.$message({
-                type:"info",
-                message:"此功能尚未开发"
-            });
+            // ctx.$message({
+            //     type:"info",
+            //     message:"此功能尚未开发"
+            // });
+            if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
+            if(actObj){
+                let pixel = JSON.parse(JSON.stringify(actObj.toJSON(["gid","date"])));
+                pixel.date = Date.now();
+                pixel.gid = ID();
+                addPixel(pixel);
+                modified({
+                    type:"创建",pixel
+                },true);
+                ctx.$message({
+                    message:"拷贝成功~",
+                    type:"success"
+                });
+            }else{
+                ctx.$message({
+                    message:"当前未选中图元喔~",
+                    type:"warning"
+                });
+            }
             break;
         case "撤销":
+            if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
             socket.emit("stream",{
                 event:"undo",
-                rid,uid,lid
+                rid,uid,lid,lock
             });
             break;
         case "重做":
+            if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
             socket.emit("stream",{
                 event:"redo",
-                rid,uid,lid
+                rid,uid,lid,lock
             });
             break;
         case "删除":
+            if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
             if(actObj){
                 let pixel = actObj.toJSON(["gid","date"]);
                 pixel.date = Date.now();
@@ -293,15 +347,16 @@ const editHandle =(e,data)=>{
             }
             break;
         case "保存":
+            if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
             socket.emit("stream",{
                 event:"save",
-                rid,uid
+                rid,uid,lock
             });
             break;
     }
 }
 
-const activeNames = ref(['1','2']);
+const activeNames = ref(['0','2']);
 
 const toolShow = ref(true);
 
@@ -318,17 +373,13 @@ const consoleHandle = (val)=>{
     consoleShow.value = false;
 }
 
-const layoutHandle = (v)=>{
-    console.log(config.value.user.lid)
-}
-
 var ID = ()=>Date.now().toString(36);
 
 function sendCanvas(){
     const {room:{rid},user:{uid,lid}} = config.value;
     socket.emit("stream",{
         event:"all",
-        rid,uid,lid,
+        rid,uid,lid,lock,
         frame:JSON.stringify(canvas.toJSON())
     });
 }
@@ -338,7 +389,7 @@ var modified = shakeProof((frame,syn=false)=>{
     socket.emit("stream",{
         event:"edit",
         rid,uid,lid,syn,
-        frame
+        frame,lock
     });
 },2);
 
@@ -358,7 +409,58 @@ var SBOX = {
     My:null
 };
 
+const styleSheet = computed(()=>{
+    UPDATE.value;
+    return [
+        {
+            name:"图元边距",
+            value:gloStyle.lineWidth
+        },{
+            name:"填充颜色",
+            value:gloStyle.fontSize
+        },{
+            name:"边框颜色",
+            value:gloStyle.fontColor
+        },{
+            name:"字体边距",
+            value:textStyle.fontSize
+        },{
+            name:"字体背景",
+            value:textStyle.fontSize
+        },{
+            name:"字体颜色",
+            value:textStyle.fontColor
+        }
+    ];
+});
+
+const userSheet = computed(()=>{
+    store.state
+    return [
+        {
+            name:"图元边距",
+            value:gloStyle.lineWidth
+        },{
+            name:"填充颜色",
+            value:gloStyle.fontSize
+        },{
+            name:"边框颜色",
+            value:gloStyle.fontColor
+        },{
+            name:"字体边距",
+            value:textStyle.fontSize
+        },{
+            name:"字体背景",
+            value:textStyle.fontSize
+        },{
+            name:"字体颜色",
+            value:textStyle.fontColor
+        }
+    ];
+});
+
 const makeShape = item=>{
+    if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
     const {label} = item;
     switch(label){
         case "直线":
@@ -417,9 +519,27 @@ const makeShape = item=>{
     // }
 }
 
+const handleFiles = (event)=>{
+    loader(event.target.files).then(v=>{
+        sendFile({
+            file:v
+        });
+    })
+}
+
+function sendFile(frame){
+    const {room:{rid},user:{uid,lid}} = config.value;
+    socket.emit("file",{
+        event:"refresh",
+        rid,uid,lid,
+        frame
+    });
+}
+
 var nowZoom = 1;
 
 const makeAct = (item)=>{
+    if(lock){ctx.$message({type:"info",message:"当前为只读模式"});return;}
     let {label} = item;
     let {room:{rid},user:{uid,lid}} = config.value;
     let event = "error";
@@ -432,7 +552,9 @@ const makeAct = (item)=>{
             break;
         case "导入":
             event="import";
-            break;
+            // loader();
+            upload._value.click()
+            return;
         case "撤销":
             event="undo";
             break;
@@ -442,7 +564,7 @@ const makeAct = (item)=>{
     }
     socket.emit("stream",{
         event,
-        rid,uid,lid
+        rid,uid,lid,lock
     });
 }
 
@@ -454,44 +576,48 @@ function addPixel(...args){
             if(o.type==="path"){
                 o.fill = null;
             }
-            canvas.add(o);
-            const editcall =(syn=false)=>{
-                o.date = Date.now();
-                if(syn){
-                    // modifiedSync({
-                    //     type:"编辑",
-                    //     pixel:o.toJSON(["gid","date"])
-                    // });
-                    modified({
-                        type:"编辑",
-                        pixel:o.toJSON(["gid","date"])
-                    },true);
-                }else{
-                    modified({
-                        type:"编辑",
-                        pixel:o.toJSON(["gid","date"])
-                    });
-                }
-            };
-            if(o.type==="i-text"){
-                o.onDeselect = function(){
-                    this.isEditing&&this.exitEditing();
-                    this.selected=false;
-                    editcall(true);
-                    selectPixel("layout");
+            if(lock){
+                o.evented = false;
+            }else{
+                const editcall =(syn=false)=>{
+                    o.date = Date.now();
+                    if(syn){
+                        // modifiedSync({
+                        //     type:"编辑",
+                        //     pixel:o.toJSON(["gid","date"])
+                        // });
+                        modified({
+                            type:"编辑",
+                            pixel:o.toJSON(["gid","date"])
+                        },true);
+                    }else{
+                        modified({
+                            type:"编辑",
+                            pixel:o.toJSON(["gid","date"])
+                        });
+                    }
                 };
-                let func = o.onInput.bind(o);
-                o.onInput = function(e){
-                    func(e);
-                    editcall(false);
+                if(o.type==="i-text"){
+                    o.onDeselect = function(){
+                        this.isEditing&&this.exitEditing();
+                        this.selected=false;
+                        editcall(true);
+                        selectPixel("layout");
+                    };
+                    let func = o.onInput.bind(o);
+                    o.onInput = function(e){
+                        func(e);
+                        editcall(false);
+                    }
                 }
+                o.onSelect = ()=>{
+                    selectPixel(o.type,o);
+                }
+                o.on("moving",()=>editcall(false));
+                o.on("scaling",()=>editcall(false));
+                o.on("rotating",()=>editcall(false));
             }
-            o.onSelect = ()=>{
-                selectPixel(o.type,o);
-            }
-            o.on("moving",editcall);
-            o.on("scaling",editcall);
-            o.on("rotating",editcall);
+            canvas.add(o);
         });
         canvas.renderOnAddRemove = origRenderOnAddRemove;
         canvas.renderAll();
@@ -559,7 +685,7 @@ watch(
         modifiedSync(()=>{
             if(selectObj!=null){
                 selectObj.date = Date.now();
-                console.log("save");
+                // console.log("save");
                 modified({
                     type:"编辑",
                     pixel:selectObj.toJSON(["gid","date"])
@@ -591,6 +717,7 @@ watch(
                 pixel:selectObj.toJSON(["gid","date"])
             });
         }
+        UPDATE.value = ID();
     }
 );
 
@@ -860,7 +987,7 @@ function refresh(){
     const {room:{rid},user:{uid,lid}} = config.value;
     socket.emit("stream",{
         event:"refresh",
-        rid,uid,lid,
+        rid,uid,lid,lock,
         frame:{}
     });  
 }
@@ -869,7 +996,7 @@ function setLayout(lid,type="切换",name){
     switch(type){
         case "删除":
             socket.emit("stream",{
-                event:"refresh",
+                event:"refresh",lock,
                 rid,uid,lid,
                 frame:{
                     type:"删除"
@@ -878,7 +1005,7 @@ function setLayout(lid,type="切换",name){
             return;
         case "创建":
             socket.emit("stream",{
-                event:"refresh",
+                event:"refresh",lock,
                 rid,uid,lid:null,
                 frame:{
                     type,name
@@ -887,9 +1014,9 @@ function setLayout(lid,type="切换",name){
             return;
         default:
             config.value.user.lid = lid;
-            console.log(lid);
+            // console.log(lid);
             socket.emit("stream",{
-                event:"refresh",
+                event:"refresh",lock,
                 rid,uid,lid,
                 frame:{
                     type,name
@@ -902,6 +1029,7 @@ onMounted(() => {
     init();
     socket.on("stream",stream);
     refresh();
+    lock = config.value.room.lock;
     document.onkeydown=function(event){
         event = event|| window.event;
         // console.log(event.keyCode );
