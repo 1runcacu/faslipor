@@ -1,6 +1,7 @@
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/controller/DemoController.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/config/WebMvcConfig.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/server/MessageEventHandler.java
+/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Usr.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/House.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Refresh.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Istream.java
@@ -9,10 +10,10 @@
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/NameList.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Redirect.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Frame.java
+/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Layout.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Stream.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Result.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/config/NettySocketioConfig.java
-/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/User.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/Service/StreamService.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/domain/Pixel.java
 /Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/java/fastclip/NettySocketioApplication.java

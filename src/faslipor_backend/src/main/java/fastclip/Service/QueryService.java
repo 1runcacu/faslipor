@@ -38,7 +38,7 @@ public class QueryService {
         Usr newUser = new Usr();
         Date time1 = new Date();
         newUser.uid = ((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
-        newUser.state = "创建者";
+        newUser.state = "管理员";
         socketIOClientMap.put(newUser.uid,client);
         socketIOClientMap1.put(client,newUser.uid);
         //加入房间列表
@@ -62,7 +62,7 @@ public class QueryService {
         newUser.lid=((Long) time1.getTime()).toString(36) + ((Double) Math.random()).toString().substring(4, 8);
         myLayout.lid=newUser.lid+"";
         log.info(String.valueOf(newUser.lid==myLayout.lid));
-        nowAllMap.put(newRoom.rid+myLayout.lid+"",null);
+        nowAllMap.put(newRoom.rid+myLayout.lid+"",new JSONObject());
         List<Layout> layouts=redisService.get(newRoom.rid+"layout",List.class);
         if(layouts==null){
             layouts=new ArrayList<>();
