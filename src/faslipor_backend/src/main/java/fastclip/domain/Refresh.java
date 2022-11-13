@@ -9,5 +9,6 @@ public class Refresh {
     public String event="refresh";
     public String rid;
     public String uid;
+    public String lid;
     public JSONObject frame;
 }

@@ -4,8 +4,9 @@ import com.alibaba.fastjson.JSONObject;
 
 import java.util.List;
 
-public class Frame {
+public class  Frame {
     /*frame:{String gid,String type, style:{int left,int top,int radius}*/
     public String type;
+    public String name;
     public JSONObject pixel;
 }
