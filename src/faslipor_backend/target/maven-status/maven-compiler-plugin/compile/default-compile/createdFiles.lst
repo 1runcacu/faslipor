@@ -14,6 +14,7 @@ fastclip/redis/RedisPoolFactory.class
 fastclip/domain/Usr.class
 fastclip/NettySocketioApplication.class
 fastclip/Service/StreamService.class
+fastclip/Service/StreamService$1.class
 fastclip/domain/Redirect.class
 fastclip/domain/Istream.class
 fastclip/redis/RedisConfig.class

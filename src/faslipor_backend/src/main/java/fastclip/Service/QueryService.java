@@ -10,7 +10,10 @@ import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
@@ -94,9 +97,13 @@ public class QueryService {
         return myResult;
     }
 
-    public Redirect exit(SocketIOClient client,String rid, String uid){
+    public Redirect exit(SocketIOClient client,String rid, String uid) throws FileNotFoundException {
         socketIOClientMap.remove(uid);//移除流接受列表
         socketIOClientMap1.remove(client);
+        File checkFile=new File("Room/"+uid+".fsl");
+        if(checkFile!=null)
+        checkFile.delete();
+        log.info("delele"+"shanchu");
         Redirect redirect=new Redirect();
         House myRoom=redisService.get(rid, House.class);
         List<JSONObject> r = redisService.get("list", List.class);
