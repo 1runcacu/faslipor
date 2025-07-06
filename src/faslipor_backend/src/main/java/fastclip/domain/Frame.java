@@ -10,4 +10,9 @@ public class  Frame {
     public String name;
     public JSONObject pixel;
     public String file;
+    public String lock;
+    public String uid;
+    public String date;
+    public String message;
+    public List<Frame> data;
 }

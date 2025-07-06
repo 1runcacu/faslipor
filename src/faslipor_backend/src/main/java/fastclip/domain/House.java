@@ -9,6 +9,7 @@ public class House {
     public String description;
     public int stats;
     public int limit;
+    public boolean lock=false;
 
     public boolean equals(House o) {
         if (this == o) return true;

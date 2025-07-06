@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import sun.misc.Queue;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -60,6 +61,8 @@ public class MessageEventHandler {
     public static Map<String,Stack<Map<String,JSONObject>>> historyAllMap=new HashMap<>();//rid,(Stack<gid,pixel>)
 
     public static Map<String,Stack<Map<String,JSONObject>>> redoAllMap=new HashMap<>();
+
+    public static Map<String,List<Frame>> chatHistory=new ConcurrentHashMap<>();
 
     public static  LinkedList<Istream> myQueue=new LinkedList<>();
 
@@ -104,6 +107,71 @@ public class MessageEventHandler {
         //sendBroadcast();
     }
 
+    @OnEvent(value = "chat")
+    public void onChat(SocketIOClient client,AckRequest request,JSONObject data0){
+        log.info("chat");
+        log.info(JSON.toJSONString(data0));
+        Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
+        if(data.event.equals("refresh")){
+            data.frame=new Frame();
+            data.frame.data=chatHistory.get(data.rid);
+            if(data.frame.data==null) {
+                data.frame.data=new ArrayList<>();
+                chatHistory.put(data.rid,data.frame.data);
+            }
+        }else{
+            List<Frame> h=chatHistory.get(data.rid);
+            h.add(data.frame);
+            chatHistory.put(data.rid,h);
+        }
+        List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+        List<JSONObject> nameList0 = new ArrayList(nameList);
+       //data.syn=true;
+        for(JSONObject cur:nameList0){ //uid
+            NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+            log.info(u.uid);
+            log.info(JSON.toJSONString(data));
+            socketIOClientMap.get(u.uid).sendEvent("chat",data);
+        }
+    }
+
+   @OnEvent(value = "console")
+   public void onConsole(SocketIOClient client, AckRequest request, JSONObject data0){
+        log.info("console");
+        log.info(JSON.toJSONString(data0));
+       Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
+       if(data0.get("event").equals("lock")){
+           log.info("lock");
+          House myHouse=redisService.get(data.rid,House.class);
+          myHouse.lock=data.frame.lock.equals("true");
+          redisService.set(data.rid,myHouse);
+          //asset room被锁定
+           List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+           List<JSONObject> nameList0 = new ArrayList(nameList);
+           Result myResult=new Result();
+           myResult.params.room=redisService.get(data.rid,House.class);
+           myResult.event="sync";
+           myResult.params.layout=redisService.get(myHouse.rid+"layout",List.class);
+           for(JSONObject cur:nameList0){ //uid
+               NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+               myResult.params.user=redisService.get(u.uid+"User",Usr.class);
+               //同步lid?
+               socketIOClientMap.get(u.uid).sendEvent("asset",myResult);
+           }
+           //所有人被同步到房主的房间
+           Refresh myRe=streamService.refresh(client,data.lid);
+           if(myRe==null) return;
+           if(redisService.get(data.rid,House.class).lock) {
+               for (JSONObject cur : nameList0) { //uid
+                   NameList u = JSON.parseObject(JSON.toJSONString(cur), NameList.class);
+                   myRe.uid = redisService.get(u.uid + "User", Usr.class).uid;
+                   socketIOClientMap.get(u.uid).sendEvent("stream", myRe);
+               }
+           }
+       }
+   }
+
+
     @OnEvent(value = "file")
     public void onFile(SocketIOClient client, AckRequest request, JSONObject data0){
         log.info("file");
@@ -120,17 +188,9 @@ public class MessageEventHandler {
                 if(redisService.get(u.uid+"User",Usr.class).lid.equals(data.lid)) //有图层在被删图层
                     socketIOClientMap.get(u.uid).sendEvent("stream",streamService.refresh(socketIOClientMap.get(u.uid),data.lid));
             }
+
         }
     }
-
-
-
-
-
-
-
-
-
     @OnEvent(value="stream")
     public void onStream(SocketIOClient client, AckRequest request, JSONObject data0) throws InterruptedException, JSONException, IOException {
        log.info("stream");
@@ -143,19 +203,24 @@ public class MessageEventHandler {
        if(data0.get("event").equals("refresh")) {
            log.info("refresh");
            Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
-
-           if(data.frame.type==null) //刚进入
+           if(data.frame.type==null||data.frame.type.equals("切换")) //刚进入
            {  Refresh myRe=streamService.refresh(client,data.lid);
                if(myRe==null) return;
+               if(redisService.get(data.rid,House.class).lock){
+                   List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
+                   List<JSONObject> nameList0 = new ArrayList(nameList);
+                   for(JSONObject cur:nameList0){ //uid
+                       NameList u = JSON.parseObject(JSON.toJSONString(cur),NameList.class);
+                       myRe.uid=redisService.get(u.uid+"User",Usr.class).uid;
+                       socketIOClientMap.get(u.uid).sendEvent("stream",myRe);
+                   }
+               }else{
                client.sendEvent("stream",myRe);}
-           else if(data.frame.type.equals("切换")){
-               Refresh myRe=streamService.refresh(client,data.lid);
-               if(myRe==null) return;
-               client.sendEvent("stream",myRe);
            }
            else if(data.frame.type.equals("创建")){
                log.info("创建");
                //给同一房间的人发
+               if(redisService.get(data.rid,House.class).lock) return;
                List<JSONObject> nameList=redisService.get(data.rid+"nameList",List.class);
                List<JSONObject> nameList0 = new ArrayList(nameList);
                Result myResult=streamService.create(client,data);
@@ -164,8 +229,11 @@ public class MessageEventHandler {
                    myResult.params.user=redisService.get(u.uid+"User",Usr.class);
                    socketIOClientMap.get(u.uid).sendEvent("asset",myResult);
                }
+               Refresh myRe=streamService.refresh(client,myResult.params.user.lid);
+               client.sendEvent("stream",myRe);
            }else if(data.frame.type.equals("删除")){
                log.info("删除"); //拉黑该lid 如果遇到编辑和刷新都无视
+               if(redisService.get(data.rid,House.class).lock) return;
                nowAllMap.put(data.rid+data.lid,null);
                Usr myUser=redisService.get(data.uid+"User",Usr.class);
                List<Layout> layouts1 = redisService.get(data.rid+"layout", List.class);
@@ -234,6 +302,7 @@ public class MessageEventHandler {
            log.info("redo");
             String uid = socketIOClientMap1.get(client);
             House myHouse=redisService.get(uid+"Room",House.class);
+            if(myHouse.lock) return;
             Usr myUsr=redisService.get(uid+"User",Usr.class);
             if(redoAllMap.get(myHouse.rid+myUsr.lid)==null) return;
             if(redoAllMap.get(myHouse.rid+myUsr.lid).size()==0) return;
@@ -265,6 +334,7 @@ public class MessageEventHandler {
            log.info("undo");
            String uid = socketIOClientMap1.get(client);
            House myHouse=redisService.get(uid+"Room",House.class);
+           if(myHouse.lock) return;
            Usr myUsr=redisService.get(uid+"User",Usr.class);
            if(historyAllMap.get(myHouse.rid+myUsr.lid)==null) return;
            if(historyAllMap.get(myHouse.rid+myUsr.lid).size()==0) return;
@@ -309,6 +379,7 @@ public class MessageEventHandler {
            log.info("edit");
            Istream data=JSON.parseObject(JSON.toJSONString(data0),Istream.class);
            //查看时间戳比队尾的大才加，否则扔掉
+          // if(redisService.get(data.rid,House.class).lock) return;
            Long dateNext= Long.valueOf(data.frame.pixel.get("date").toString());
            if(myQueue.size()==0&&dateNext<pre){
            return;
@@ -404,6 +475,13 @@ public class MessageEventHandler {
         String message="d";
         List<House> r = redisService.get("list", List.class);
         message = String.valueOf(JSON.parseArray(String.valueOf(r)));
+        Redirect my=new Redirect();
+        my.path="/";
+        Result myResult=new Result();
+        myResult.data=redisService.get("list", List.class);
+       // log.info("redis里的"+myResult.data.toString());
+        my.params.result=myResult;
+        client.sendEvent("redirect",my);
         //client.sendEvent("message", r);
         //sendBroadcast();
         log.info("客户端:" + client.getSessionId() + "已连接,mac=" + "mac");
@@ -415,7 +493,7 @@ public class MessageEventHandler {
      * @param client
      */
     @OnDisconnect
-    public void onDisconnect(SocketIOClient client) {
+    public void onDisconnect(SocketIOClient client) throws FileNotFoundException {
         log.info("检测到断连");
         socketIOClientSet.remove(client);
         log.info("移除client "+client.toString());
@@ -425,7 +503,7 @@ public class MessageEventHandler {
             String rid=redisService.get(uid+"Room",House.class).rid;
             log.info("拿到rid"+ rid);
             log.info("要退出房间了");
-            queryService.exit(client,rid,uid);
+            client.sendEvent("redirect",queryService.exit(client,rid,uid));
         }int i=0;
         for(SocketIOClient cur:socketIOClientSet){
             cur.sendEvent("asset",queryService.list());

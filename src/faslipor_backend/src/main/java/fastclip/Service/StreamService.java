@@ -10,13 +10,12 @@ import fastclip.redis.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static fastclip.server.MessageEventHandler.*;
 
@@ -32,8 +31,9 @@ public class StreamService {
        if(!nowAllMap.containsKey(myRoom.rid+data0.get("lid"))) return null;
        //部署时注意这里需要改
        fastclip.domain.File newFile=new fastclip.domain.File();
-       String filePath="/Users/sunxiaoqi/Downloads/Java/faslipor/src/faslipor_backend/src/main/resources/Room";
-       File dir=new File(filePath);
+       String filePath="Room";
+      // String filePath="1.jar/classes/Room";
+        File dir=new File(filePath);
        if(!dir.exists()){
            dir.mkdirs();
        }
@@ -42,17 +42,21 @@ public class StreamService {
        try{
            if(!checkFile.exists()){
                checkFile.createNewFile();
+               log.info("存在吗"+String.valueOf(checkFile.exists()));
+               log.info(checkFile.getAbsolutePath());
            }
            writer=new FileWriter(checkFile,false);
            writer.append(JSON.toJSONString(nowAllMap.get(myRoom.rid+data0.get("lid"))));
            writer.flush();
        } catch (IOException e) {
            e.printStackTrace();
-       }finally {
+       } finally {
            if(null!=writer)
                writer.close();
        }
-       newFile.url="http://127.0.0.1:8101/Room"+"/"+uid+".fsl";
+       //43.143.130.52:8101
+       //http://localhost:8101/Room/362473.fsl
+       newFile.url="http://43.143.130.52:8101"+"/"+uid+".fsl";
        newFile.name=uid+".fsl";
        log.info(JSONObject.toJSONString(newFile));
        return newFile;
@@ -104,5 +108,24 @@ public class StreamService {
        return myResult;
 
    }
+    public  void clock(File file) throws InterruptedException {
 
+        Timer timer = new Timer();
+//设置定时任务
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                clean(file);
+            }
+        }, 10000,  10000);
+        //timer.cancel();
+        log.info("cancel");
+    }
+
+    //清理文件
+    public  void clean(File f) {
+                f.delete();
+                System.out.println(f.getName() + "已清理!!!");
+
+    }
 }
