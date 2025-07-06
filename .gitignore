@@ -1,2 +1,9 @@
 .lnk
 /test
+dist
+*.zip
+*.pptx
+*.lnk
+.VSCodeCounter
+target
+static

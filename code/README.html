@@ -1,0 +1,598 @@
+<!doctype html>
+<html>
+<head>
+<meta charset='UTF-8'><meta name='viewport' content='width=device-width initial-scale=1'>
+
+<link href='https://fonts.loli.net/css?family=Open+Sans:400italic,700italic,700,400&subset=latin,latin-ext' rel='stylesheet' type='text/css' /><style type='text/css'>html {overflow-x: initial !important;}:root { --bg-color:#ffffff; --text-color:#333333; --select-text-bg-color:#B5D6FC; --select-text-font-color:auto; --monospace:"Lucida Console",Consolas,"Courier",monospace; --title-bar-height:20px; }
+.mac-os-11 { --title-bar-height:28px; }
+html { font-size: 14px; background-color: var(--bg-color); color: var(--text-color); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+body { margin: 0px; padding: 0px; height: auto; inset: 0px; font-size: 1rem; line-height: 1.42857; overflow-x: hidden; background: inherit; tab-size: 4; }
+iframe { margin: auto; }
+a.url { word-break: break-all; }
+a:active, a:hover { outline: 0px; }
+.in-text-selection, ::selection { text-shadow: none; background: var(--select-text-bg-color); color: var(--select-text-font-color); }
+#write { margin: 0px auto; height: auto; width: inherit; word-break: normal; overflow-wrap: break-word; position: relative; white-space: normal; overflow-x: visible; padding-top: 36px; }
+#write.first-line-indent p { text-indent: 2em; }
+#write.first-line-indent li p, #write.first-line-indent p * { text-indent: 0px; }
+#write.first-line-indent li { margin-left: 2em; }
+.for-image #write { padding-left: 8px; padding-right: 8px; }
+body.typora-export { padding-left: 30px; padding-right: 30px; }
+.typora-export .footnote-line, .typora-export li, .typora-export p { white-space: pre-wrap; }
+.typora-export .task-list-item input { pointer-events: none; }
+@media screen and (max-width: 500px) {
+  body.typora-export { padding-left: 0px; padding-right: 0px; }
+  #write { padding-left: 20px; padding-right: 20px; }
+  .CodeMirror-sizer { margin-left: 0px !important; }
+  .CodeMirror-gutters { display: none !important; }
+}
+#write li > figure:last-child { margin-bottom: 0.5rem; }
+#write ol, #write ul { position: relative; }
+img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
+button, input, select, textarea { color: inherit; font: inherit; }
+input[type="checkbox"], input[type="radio"] { line-height: normal; padding: 0px; }
+*, ::after, ::before { box-sizing: border-box; }
+#write h1, #write h2, #write h3, #write h4, #write h5, #write h6, #write p, #write pre { width: inherit; }
+#write h1, #write h2, #write h3, #write h4, #write h5, #write h6, #write p { position: relative; }
+p { line-height: inherit; }
+h1, h2, h3, h4, h5, h6 { break-after: avoid-page; break-inside: avoid; orphans: 4; }
+p { orphans: 4; }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.8rem; }
+h3 { font-size: 1.6rem; }
+h4 { font-size: 1.4rem; }
+h5 { font-size: 1.2rem; }
+h6 { font-size: 1rem; }
+.md-math-block, .md-rawblock, h1, h2, h3, h4, h5, h6, p { margin-top: 1rem; margin-bottom: 1rem; }
+.hidden { display: none; }
+.md-blockmeta { color: rgb(204, 204, 204); font-weight: 700; font-style: italic; }
+a { cursor: pointer; }
+sup.md-footnote { padding: 2px 4px; background-color: rgba(238, 238, 238, 0.7); color: rgb(85, 85, 85); border-radius: 4px; cursor: pointer; }
+sup.md-footnote a, sup.md-footnote a:hover { color: inherit; text-transform: inherit; text-decoration: inherit; }
+#write input[type="checkbox"] { cursor: pointer; width: inherit; height: inherit; }
+figure { overflow-x: auto; margin: 1.2em 0px; max-width: calc(100% + 16px); padding: 0px; }
+figure > table { margin: 0px; }
+tr { break-inside: avoid; break-after: auto; }
+thead { display: table-header-group; }
+table { border-collapse: collapse; border-spacing: 0px; width: 100%; overflow: auto; break-inside: auto; text-align: left; }
+table.md-table td { min-width: 32px; }
+.CodeMirror-gutters { border-right: 0px; background-color: inherit; }
+.CodeMirror-linenumber { user-select: none; }
+.CodeMirror { text-align: left; }
+.CodeMirror-placeholder { opacity: 0.3; }
+.CodeMirror pre { padding: 0px 4px; }
+.CodeMirror-lines { padding: 0px; }
+div.hr:focus { cursor: none; }
+#write pre { white-space: pre-wrap; }
+#write.fences-no-line-wrapping pre { white-space: pre; }
+#write pre.ty-contain-cm { white-space: normal; }
+.CodeMirror-gutters { margin-right: 4px; }
+.md-fences { font-size: 0.9rem; display: block; break-inside: avoid; text-align: left; overflow: visible; white-space: pre; background: inherit; position: relative !important; }
+.md-fences-adv-panel { width: 100%; margin-top: 10px; text-align: center; padding-top: 0px; padding-bottom: 8px; overflow-x: auto; }
+#write .md-fences.mock-cm { white-space: pre-wrap; }
+.md-fences.md-fences-with-lineno { padding-left: 0px; }
+#write.fences-no-line-wrapping .md-fences.mock-cm { white-space: pre; overflow-x: auto; }
+.md-fences.mock-cm.md-fences-with-lineno { padding-left: 8px; }
+.CodeMirror-line, twitterwidget { break-inside: avoid; }
+.footnotes { opacity: 0.8; font-size: 0.9rem; margin-top: 1em; margin-bottom: 1em; }
+.footnotes + .footnotes { margin-top: 0px; }
+.md-reset { margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: top; background: 0px 0px; text-decoration: none; text-shadow: none; float: none; position: static; width: auto; height: auto; white-space: nowrap; cursor: inherit; -webkit-tap-highlight-color: transparent; line-height: normal; font-weight: 400; text-align: left; box-sizing: content-box; direction: ltr; }
+li div { padding-top: 0px; }
+blockquote { margin: 1rem 0px; }
+li .mathjax-block, li p { margin: 0.5rem 0px; }
+li blockquote { margin: 1rem 0px; }
+li { margin: 0px; position: relative; }
+blockquote > :last-child { margin-bottom: 0px; }
+blockquote > :first-child, li > :first-child { margin-top: 0px; }
+.footnotes-area { color: rgb(136, 136, 136); margin-top: 0.714rem; padding-bottom: 0.143rem; white-space: normal; }
+#write .footnote-line { white-space: pre-wrap; }
+@media print {
+  body, html { border: 1px solid transparent; height: 99%; break-after: avoid; break-before: avoid; font-variant-ligatures: no-common-ligatures; }
+  #write { margin-top: 0px; padding-top: 0px; border-color: transparent !important; }
+  .typora-export * { -webkit-print-color-adjust: exact; }
+  .typora-export #write { break-after: avoid; }
+  .typora-export #write::after { height: 0px; }
+  .is-mac table { break-inside: avoid; }
+  .typora-export-show-outline .typora-export-sidebar { display: none; }
+}
+.footnote-line { margin-top: 0.714em; font-size: 0.7em; }
+a img, img a { cursor: pointer; }
+pre.md-meta-block { font-size: 0.8rem; min-height: 0.8rem; white-space: pre-wrap; background: rgb(204, 204, 204); display: block; overflow-x: hidden; }
+p > .md-image:only-child:not(.md-img-error) img, p > img:only-child { display: block; margin: auto; }
+#write.first-line-indent p > .md-image:only-child:not(.md-img-error) img { left: -2em; position: relative; }
+p > .md-image:only-child { display: inline-block; width: 100%; }
+#write .MathJax_Display { margin: 0.8em 0px 0px; }
+.md-math-block { width: 100%; }
+.md-math-block:not(:empty)::after { display: none; }
+.MathJax_ref { fill: currentcolor; }
+[contenteditable="true"]:active, [contenteditable="true"]:focus, [contenteditable="false"]:active, [contenteditable="false"]:focus { outline: 0px; box-shadow: none; }
+.md-task-list-item { position: relative; list-style-type: none; }
+.task-list-item.md-task-list-item { padding-left: 0px; }
+.md-task-list-item > input { position: absolute; top: 0px; left: 0px; margin-left: -1.2em; margin-top: calc(1em - 10px); border: none; }
+.math { font-size: 1rem; }
+.md-toc { min-height: 3.58rem; position: relative; font-size: 0.9rem; border-radius: 10px; }
+.md-toc-content { position: relative; margin-left: 0px; }
+.md-toc-content::after, .md-toc::after { display: none; }
+.md-toc-item { display: block; color: rgb(65, 131, 196); }
+.md-toc-item a { text-decoration: none; }
+.md-toc-inner:hover { text-decoration: underline; }
+.md-toc-inner { display: inline-block; cursor: pointer; }
+.md-toc-h1 .md-toc-inner { margin-left: 0px; font-weight: 700; }
+.md-toc-h2 .md-toc-inner { margin-left: 2em; }
+.md-toc-h3 .md-toc-inner { margin-left: 4em; }
+.md-toc-h4 .md-toc-inner { margin-left: 6em; }
+.md-toc-h5 .md-toc-inner { margin-left: 8em; }
+.md-toc-h6 .md-toc-inner { margin-left: 10em; }
+@media screen and (max-width: 48em) {
+  .md-toc-h3 .md-toc-inner { margin-left: 3.5em; }
+  .md-toc-h4 .md-toc-inner { margin-left: 5em; }
+  .md-toc-h5 .md-toc-inner { margin-left: 6.5em; }
+  .md-toc-h6 .md-toc-inner { margin-left: 8em; }
+}
+a.md-toc-inner { font-size: inherit; font-style: inherit; font-weight: inherit; line-height: inherit; }
+.footnote-line a:not(.reversefootnote) { color: inherit; }
+.md-attr { display: none; }
+.md-fn-count::after { content: "."; }
+code, pre, samp, tt { font-family: var(--monospace); }
+kbd { margin: 0px 0.1em; padding: 0.1em 0.6em; font-size: 0.8em; color: rgb(36, 39, 41); background: rgb(255, 255, 255); border: 1px solid rgb(173, 179, 185); border-radius: 3px; box-shadow: rgba(12, 13, 14, 0.2) 0px 1px 0px, rgb(255, 255, 255) 0px 0px 0px 2px inset; white-space: nowrap; vertical-align: middle; }
+.md-comment { color: rgb(162, 127, 3); opacity: 0.6; font-family: var(--monospace); }
+code { text-align: left; vertical-align: initial; }
+a.md-print-anchor { white-space: pre !important; border-width: initial !important; border-style: none !important; border-color: initial !important; display: inline-block !important; position: absolute !important; width: 1px !important; right: 0px !important; outline: 0px !important; background: 0px 0px !important; text-decoration: initial !important; text-shadow: initial !important; }
+.os-windows.monocolor-emoji .md-emoji { font-family: "Segoe UI Symbol", sans-serif; }
+.md-diagram-panel > svg { max-width: 100%; }
+[lang="flow"] svg, [lang="mermaid"] svg { max-width: 100%; height: auto; }
+[lang="mermaid"] .node text { font-size: 1rem; }
+table tr th { border-bottom: 0px; }
+video { max-width: 100%; display: block; margin: 0px auto; }
+iframe { max-width: 100%; width: 100%; border: none; }
+.highlight td, .highlight tr { border: 0px; }
+mark { background: rgb(255, 255, 0); color: rgb(0, 0, 0); }
+.md-html-inline .md-plain, .md-html-inline strong, mark .md-inline-math, mark strong { color: inherit; }
+.md-expand mark .md-meta { opacity: 0.3 !important; }
+mark .md-meta { color: rgb(0, 0, 0); }
+@media print {
+  .typora-export h1, .typora-export h2, .typora-export h3, .typora-export h4, .typora-export h5, .typora-export h6 { break-inside: avoid; }
+}
+.md-diagram-panel .messageText { stroke: none !important; }
+.md-diagram-panel .start-state { fill: var(--node-fill); }
+.md-diagram-panel .edgeLabel rect { opacity: 1 !important; }
+.md-fences.md-fences-math { font-size: 1em; }
+.md-fences-advanced:not(.md-focus) { padding: 0px; white-space: nowrap; border: 0px; }
+.md-fences-advanced:not(.md-focus) { background: inherit; }
+.typora-export-show-outline .typora-export-content { max-width: 1440px; margin: auto; display: flex; flex-direction: row; }
+.typora-export-sidebar { width: 300px; font-size: 0.8rem; margin-top: 80px; margin-right: 18px; }
+.typora-export-show-outline #write { --webkit-flex:2; flex: 2 1 0%; }
+.typora-export-sidebar .outline-content { position: fixed; top: 0px; max-height: 100%; overflow: hidden auto; padding-bottom: 30px; padding-top: 60px; width: 300px; }
+@media screen and (max-width: 1024px) {
+  .typora-export-sidebar, .typora-export-sidebar .outline-content { width: 240px; }
+}
+@media screen and (max-width: 800px) {
+  .typora-export-sidebar { display: none; }
+}
+.outline-content li, .outline-content ul { margin-left: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px; list-style: none; }
+.outline-content ul { margin-top: 0px; margin-bottom: 0px; }
+.outline-content strong { font-weight: 400; }
+.outline-expander { width: 1rem; height: 1.42857rem; position: relative; display: table-cell; vertical-align: middle; cursor: pointer; padding-left: 4px; }
+.outline-expander::before { content: ""; position: relative; font-family: Ionicons; display: inline-block; font-size: 8px; vertical-align: middle; }
+.outline-item { padding-top: 3px; padding-bottom: 3px; cursor: pointer; }
+.outline-expander:hover::before { content: ""; }
+.outline-h1 > .outline-item { padding-left: 0px; }
+.outline-h2 > .outline-item { padding-left: 1em; }
+.outline-h3 > .outline-item { padding-left: 2em; }
+.outline-h4 > .outline-item { padding-left: 3em; }
+.outline-h5 > .outline-item { padding-left: 4em; }
+.outline-h6 > .outline-item { padding-left: 5em; }
+.outline-label { cursor: pointer; display: table-cell; vertical-align: middle; text-decoration: none; color: inherit; }
+.outline-label:hover { text-decoration: underline; }
+.outline-item:hover { border-color: rgb(245, 245, 245); background-color: var(--item-hover-bg-color); }
+.outline-item:hover { margin-left: -28px; margin-right: -28px; border-left: 28px solid transparent; border-right: 28px solid transparent; }
+.outline-item-single .outline-expander::before, .outline-item-single .outline-expander:hover::before { display: none; }
+.outline-item-open > .outline-item > .outline-expander::before { content: ""; }
+.outline-children { display: none; }
+.info-panel-tab-wrapper { display: none; }
+.outline-item-open > .outline-children { display: block; }
+.typora-export .outline-item { padding-top: 1px; padding-bottom: 1px; }
+.typora-export .outline-item:hover { margin-right: -8px; border-right: 8px solid transparent; }
+.typora-export .outline-expander::before { content: "+"; font-family: inherit; top: -1px; }
+.typora-export .outline-expander:hover::before, .typora-export .outline-item-open > .outline-item > .outline-expander::before { content: "−"; }
+.typora-export-collapse-outline .outline-children { display: none; }
+.typora-export-collapse-outline .outline-item-open > .outline-children, .typora-export-no-collapse-outline .outline-children { display: block; }
+.typora-export-no-collapse-outline .outline-expander::before { content: "" !important; }
+.typora-export-show-outline .outline-item-active > .outline-item .outline-label { font-weight: 700; }
+.md-inline-math-container mjx-container { zoom: 0.95; }
+
+
+:root {
+    --side-bar-bg-color: #fafafa;
+    --control-text-color: #777;
+}
+
+@include-when-export url(https://fonts.loli.net/css?family=Open+Sans:400italic,700italic,700,400&subset=latin,latin-ext);
+
+/* open-sans-regular - latin-ext_latin */
+  /* open-sans-italic - latin-ext_latin */
+    /* open-sans-700 - latin-ext_latin */
+    /* open-sans-700italic - latin-ext_latin */
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    font-family: "Open Sans","Clear Sans", "Helvetica Neue", Helvetica, Arial, 'Segoe UI Emoji', sans-serif;
+    color: rgb(51, 51, 51);
+    line-height: 1.6;
+}
+
+#write {
+    max-width: 860px;
+  	margin: 0 auto;
+  	padding: 30px;
+    padding-bottom: 100px;
+}
+
+@media only screen and (min-width: 1400px) {
+	#write {
+		max-width: 1024px;
+	}
+}
+
+@media only screen and (min-width: 1800px) {
+	#write {
+		max-width: 1200px;
+	}
+}
+
+#write > ul:first-child,
+#write > ol:first-child{
+    margin-top: 30px;
+}
+
+a {
+    color: #4183C4;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    position: relative;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    line-height: 1.4;
+    cursor: text;
+}
+h1:hover a.anchor,
+h2:hover a.anchor,
+h3:hover a.anchor,
+h4:hover a.anchor,
+h5:hover a.anchor,
+h6:hover a.anchor {
+    text-decoration: none;
+}
+h1 tt,
+h1 code {
+    font-size: inherit;
+}
+h2 tt,
+h2 code {
+    font-size: inherit;
+}
+h3 tt,
+h3 code {
+    font-size: inherit;
+}
+h4 tt,
+h4 code {
+    font-size: inherit;
+}
+h5 tt,
+h5 code {
+    font-size: inherit;
+}
+h6 tt,
+h6 code {
+    font-size: inherit;
+}
+h1 {
+    font-size: 2.25em;
+    line-height: 1.2;
+    border-bottom: 1px solid #eee;
+}
+h2 {
+    font-size: 1.75em;
+    line-height: 1.225;
+    border-bottom: 1px solid #eee;
+}
+
+/*@media print {
+    .typora-export h1,
+    .typora-export h2 {
+        border-bottom: none;
+        padding-bottom: initial;
+    }
+
+    .typora-export h1::after,
+    .typora-export h2::after {
+        content: "";
+        display: block;
+        height: 100px;
+        margin-top: -96px;
+        border-top: 1px solid #eee;
+    }
+}*/
+
+h3 {
+    font-size: 1.5em;
+    line-height: 1.43;
+}
+h4 {
+    font-size: 1.25em;
+}
+h5 {
+    font-size: 1em;
+}
+h6 {
+   font-size: 1em;
+    color: #777;
+}
+p,
+blockquote,
+ul,
+ol,
+dl,
+table{
+    margin: 0.8em 0;
+}
+li>ol,
+li>ul {
+    margin: 0 0;
+}
+hr {
+    height: 2px;
+    padding: 0;
+    margin: 16px 0;
+    background-color: #e7e7e7;
+    border: 0 none;
+    overflow: hidden;
+    box-sizing: content-box;
+}
+
+li p.first {
+    display: inline-block;
+}
+ul,
+ol {
+    padding-left: 30px;
+}
+ul:first-child,
+ol:first-child {
+    margin-top: 0;
+}
+ul:last-child,
+ol:last-child {
+    margin-bottom: 0;
+}
+blockquote {
+    border-left: 4px solid #dfe2e5;
+    padding: 0 15px;
+    color: #777777;
+}
+blockquote blockquote {
+    padding-right: 0;
+}
+table {
+    padding: 0;
+    word-break: initial;
+}
+table tr {
+    border: 1px solid #dfe2e5;
+    margin: 0;
+    padding: 0;
+}
+table tr:nth-child(2n),
+thead {
+    background-color: #f8f8f8;
+}
+table th {
+    font-weight: bold;
+    border: 1px solid #dfe2e5;
+    border-bottom: 0;
+    margin: 0;
+    padding: 6px 13px;
+}
+table td {
+    border: 1px solid #dfe2e5;
+    margin: 0;
+    padding: 6px 13px;
+}
+table th:first-child,
+table td:first-child {
+    margin-top: 0;
+}
+table th:last-child,
+table td:last-child {
+    margin-bottom: 0;
+}
+
+.CodeMirror-lines {
+    padding-left: 4px;
+}
+
+.code-tooltip {
+    box-shadow: 0 1px 1px 0 rgba(0,28,36,.3);
+    border-top: 1px solid #eef2f2;
+}
+
+.md-fences,
+code,
+tt {
+    border: 1px solid #e7eaed;
+    background-color: #f8f8f8;
+    border-radius: 3px;
+    padding: 0;
+    padding: 2px 4px 0px 4px;
+    font-size: 0.9em;
+}
+
+code {
+    background-color: #f3f4f4;
+    padding: 0 2px 0 2px;
+}
+
+.md-fences {
+    margin-bottom: 15px;
+    margin-top: 15px;
+    padding-top: 8px;
+    padding-bottom: 6px;
+}
+
+
+.md-task-list-item > input {
+  margin-left: -1.3em;
+}
+
+@media print {
+    html {
+        font-size: 13px;
+    }
+    table,
+    pre {
+        page-break-inside: avoid;
+    }
+    pre {
+        word-wrap: break-word;
+    }
+}
+
+.md-fences {
+	background-color: #f8f8f8;
+}
+#write pre.md-meta-block {
+	padding: 1rem;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f7f7f7;
+    border: 0;
+    border-radius: 3px;
+    color: #777777;
+    margin-top: 0 !important;
+}
+
+.mathjax-block>.code-tooltip {
+	bottom: .375rem;
+}
+
+.md-mathjax-midline {
+    background: #fafafa;
+}
+
+#write>h3.md-focus:before{
+	left: -1.5625rem;
+	top: .375rem;
+}
+#write>h4.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+#write>h5.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+#write>h6.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+.md-image>.md-meta {
+    /*border: 1px solid #ddd;*/
+    border-radius: 3px;
+    padding: 2px 0px 0px 4px;
+    font-size: 0.9em;
+    color: inherit;
+}
+
+.md-tag {
+    color: #a7a7a7;
+    opacity: 1;
+}
+
+.md-toc { 
+    margin-top:20px;
+    padding-bottom:20px;
+}
+
+.sidebar-tabs {
+    border-bottom: none;
+}
+
+#typora-quick-open {
+    border: 1px solid #ddd;
+    background-color: #f8f8f8;
+}
+
+#typora-quick-open-item {
+    background-color: #FAFAFA;
+    border-color: #FEFEFE #e5e5e5 #e5e5e5 #eee;
+    border-style: solid;
+    border-width: 1px;
+}
+
+/** focus mode */
+.on-focus-mode blockquote {
+    border-left-color: rgba(85, 85, 85, 0.12);
+}
+
+header, .context-menu, .megamenu-content, footer{
+    font-family: "Segoe UI", "Arial", sans-serif;
+}
+
+.file-node-content:hover .file-node-icon,
+.file-node-content:hover .file-node-open-state{
+    visibility: visible;
+}
+
+.mac-seamless-mode #typora-sidebar {
+    background-color: #fafafa;
+    background-color: var(--side-bar-bg-color);
+}
+
+.md-lang {
+    color: #b4654d;
+}
+
+/*.html-for-mac {
+    --item-hover-bg-color: #E6F0FE;
+}*/
+
+#md-notification .btn {
+    border: 0;
+}
+
+.dropdown-menu .divider {
+    border-color: #e5e5e5;
+    opacity: 0.4;
+}
+
+.ty-preferences .window-content {
+    background-color: #fafafa;
+}
+
+.ty-preferences .nav-group-item.active {
+    color: white;
+    background: #999;
+}
+
+.menu-item-container a.menu-style-btn {
+    background-color: #f5f8fa;
+    background-image: linear-gradient( 180deg , hsla(0, 0%, 100%, 0.8), hsla(0, 0%, 100%, 0)); 
+}
+
+
+
+</style><title>README</title>
+</head>
+<body class='typora-export os-windows'><div class='typora-export-content'>
+<div id='write'  class=''><h1 id='faslipor协同白板设计及使用说明书'><span>FASLIPOR协同白板设计及使用说明书</span></h1><p>&nbsp;</p><h2 id='一\t需求分析'><span>一</span><span>	</span><span>需求分析</span></h2><p><span>	</span><span>协同白板市场近年来呈现出快速增长的趋势，受到企业协作方式的变革和远程办公的推动，市场需求持续增长。协同白板作为一种新型的远程协作工具，已经成为众多企业和组织的首选，在模拟会议的过程中，协同白板的web平台使得不同的会议成员可以实时的记录和共享信息，有助于促进团队协作、创新和沟通效率提升。同时在教育领域中教育者可以通过协同白板实现跨时间、跨地点的教学协作，为学生提供更加互动化和个性化学习体验。随着数字化教育的不断推进，协同白板在教学中的应用将进一步深化，为教育行业带来更多的可能性与机遇。由此可见，协同白板软件市场充满了前景与活力。</span></p><p><span>	</span><span>目前市场上主流的协同白板软件虽然有着UI界面丰富、功能集成度高的特点，但这无形中，增加了使用学习成本，且这些软件都需要下载app,注册账号，对于协同编辑的使用者来说不够方便快捷。因此我们团队开发了一款</span><em><strong><span>*</span><span>更轻量</span><span>*</span></strong></em><span>的</span><em><strong><span>*</span><span>在线多人实时编辑</span><span>*</span></strong></em><span>的平台，在</span><em><strong><span>*</span><span>浏览器上登录网址</span><span>*</span></strong></em><span>即可使用。利用网页版本的跨平台特性，可以轻松地将软件部署在各种设备上，</span><em><strong><span>*</span><span>无需</span><span>*</span></strong></em><span>进行安装处理。同时我们开发的是静态网站，因此在初次加载后会自动缓存至本地，</span><em><strong><span>*</span><span>降低</span><span>*</span></strong></em><span>再次访问的成本。目前主要支持的浏览器为edge 和 chrome。该平台涵盖了大部分的协同白板功能，产品的主体基调围绕黑白灰展开，操作追求</span><em><strong><span>*</span><span>极致的高效与快捷</span><span>*</span></strong></em><span>，持续优化用户的交互体验，操作</span><em><strong><span>*</span><span>简单</span><span>*</span></strong></em><span>，上手难度</span><em><strong><span>*</span><span>较低</span><span>*</span></strong></em><span>。</span></p><p><img src="./img_/image-20240428234906420.png" referrerpolicy="no-referrer" alt="image-20240428234906420"></p><p><span>竞品分析表</span></p><figure><table><thead><tr><th><em><strong><span>*</span><span>产品</span><span>*</span></strong></em></th><th><em><strong><span>*</span><span>平台</span><span>*</span></strong></em></th><th><em><strong><span>*</span><span>是否需要账号</span><span>*</span></strong></em></th><th><em><strong><span>*</span><span>费用</span><span>*</span></strong></em></th><th><em><strong><span>*</span><span>协同编辑方式</span><span>*</span></strong></em></th><th><em><strong><span>*</span><span>是否可以上传/下载白板文件</span><span>*</span></strong></em></th><th style='text-align:center;' ><em><strong><span>*</span><span>入门难度</span><span>*</span></strong></em></th></tr></thead><tbody><tr><td><span>FASLIPOR</span></td><td><span>跨平台(HTML5)</span></td><td><span>否</span></td><td><span>免费</span></td><td><span>网页共享</span></td><td><span>可以</span></td><td style='text-align:center;' ><span>较低</span></td></tr><tr><td><span>腾讯会议</span></td><td><span>Windows/Andriod/Ios</span></td><td><span>是</span></td><td><span>￥49/月</span></td><td><span>创建会议</span></td><td><span>只能下载</span></td><td style='text-align:center;' ><span>较低</span></td></tr><tr><td><span>飞书文档</span></td><td><span>Windows/Andriod/Ios</span></td><td><span>是</span></td><td><span>￥50/月</span></td><td><span>链接分享</span></td><td><span>不可以</span></td><td style='text-align:center;' ><span>较高</span></td></tr><tr><td><span>语雀文档</span></td><td><span>Windows/Andriod/Ios</span></td><td><span>是</span></td><td><span>免费</span></td><td><span>链接分享</span></td><td><span>不可以</span></td><td style='text-align:center;' ><span>中等</span></td></tr></tbody></table></figure><p>&nbsp;</p><h2 id='二\t概要设计'><span>二</span><span>	</span><span>概要设计</span></h2><p><span>	</span><span>本软件的设计理念开发一款操作追求极致的高效与快捷，持续优化用户的交互体验的在线协同编辑白板，核心要点是【高效】。</span></p><p><span>	</span><span>对于高效我们表现在三个方面，首先是在架构选择上，我们希望符合高效高速迭代业务需求。前端架构我们选择使用Vue系列【vue、vue-router、vuex】+ element-ui系列【element-plus】+ fabricJS/p5Js,采用SPA应用进行业务支撑，结构化进行系统模块搭建，解耦全栈开发。在初期产品需求的迭代上看，采用vue进行开发能显著提效，开发者能更多的关注业务迭代减少很多0-1的底层赋能工作量。在后端架构上我们选择SpringBoot + Redis + Netty-socketio，采用java的SpringBoot进行服务端业务支撑，模块划分结构清晰， 采用Redis的实现IO吞吐优化以及承载容灾能力，进一步提升产品稳定性。对前后端架构的选择体现了本作品设计理念。</span></p><p><span>	</span><span>其次是用户角度，降低学习成本，快速上手产品使用是我们设计作品的初衷，本作品可以在网页登录使用，无需注册。在有限空间内部，以最简约的方式尽可能多地集成所有功能，界面素雅，可折叠工具栏进行维度收缩，获得更大的白板使用面积，系统提供了大量自适应操作与页面窗口进行高效交互，清晰简洁的图标按键可供用户快速上手进行编辑和交流，降低软件上手难度以及提高使用软件的效率。</span></p><p><span>	</span><span>最后是程序设计中，层层封装，逐级递进，从前端鉴权接口模块，状态管理模块，流处理接口模块，控制请求接口模块，到后端订阅者发布总线模块，信息托管模块，数据持久化模块的封装。采用微内核的思路，引擎的源码是可裁剪的，不会牵一发而动全身，体现了高内聚和低耦合的思想。在实际代码编写中，尽可能少地使用闭包，从而有效抑制内存泄漏，大量采用异步回调进行时序控制，降低CPU 的占用以及让前端响应无阻塞。同时我们精简了数据链路，以实现数据的高速同步。</span></p><p><img src="./img_/image-20240428235502426.png" referrerpolicy="no-referrer" alt="image-20240428235502426"></p><p>&nbsp;</p><h2 id='三\t使用说明'><span>三</span><span>	</span><span>使用说明</span></h2><p><span>	</span><span>首先介绍房间登录界面，打开链接后，进入初始界面，如下图所示。正上方为搜索框，可搜索你想进入的房间。</span></p><p><span>	</span><span>点击+号，创建房间，可以更改房间名称，添加房间简介，添加房间密码，然后点击创建即可进入白板编辑界面。或者直接加入已经存在的房间，输入登录密码进入房间。</span></p><p><img src="./img_/image-20240428235635170.png" referrerpolicy="no-referrer" alt="image-20240428235635170"></p><p><img src="./img_/image-20240428235723595.png" referrerpolicy="no-referrer" alt="image-20240428235723595"></p><p><img src="./img_/image-20240428235739305.png" referrerpolicy="no-referrer" alt="image-20240428235739305"></p><p><span>	</span><span>然后介绍白板编辑界面，如下图所示，软件一共分为四块区域。</span></p><p><span> </span></p><p><span>	</span><span>区域一为工具栏，里面分为几个大类。工程类进行白板文件的保存，下载，打开，编辑白板过程中的撤回和取向撤回；图层类进行新的图层添加；形状类进行文字的编写，图形的编辑；样式表类用于展示当前编辑文字或图形的信息；更多信息类用于展示房间信息。</span></p><p><span>	</span><span>区域二为样式栏，可选中一个或多个图形，并修改图形的样式，比如线宽、线型、线色、填充色、字体、字号等，回滚/重做自己的最近编辑的内容(即Undo/Redo支持)，白板的当前内容移动、缩放、删除被选中的所有图形的功能。</span></p><p><img src="./img_/image-20240428235822038.png" referrerpolicy="no-referrer" alt="image-20240428235822038"></p><p><img src="./img_/image-20240428235837839.png" referrerpolicy="no-referrer" alt="image-20240428235837839"></p><p><span>	</span><span>区域三为控制台，消息日志里房间内用户可以进行消息的发送；房间设置里可以选择协作和只读两种模式(只有管理员可以修改模式)- 只读模式下，每个人都不能编辑，且前前页自动同步；在设置里也可以改变昵称，管理员有唯一的身份标识。</span></p><p><img src="./img_/image-20240428235943064.png" referrerpolicy="no-referrer" alt="image-20240428235943064"></p><p><img src="./img_/image-20240428235952438.png" referrerpolicy="no-referrer" alt="image-20240428235952438"></p><p><span>	</span><span>区域四为FASLIPOR悬浮精灵，可以打开进行一键式快捷操作和跳转查看本作品的使用说明。</span></p><p><img src="./img_/image-20240429000016786.png" referrerpolicy="no-referrer" alt="image-20240429000016786"></p><p>&nbsp;</p><h2 id='四\t详细设计及技术说明'><span>四</span><span>	</span><span>详细设计及技术说明</span></h2><h3 id='41交互逻辑'><span>4.1交互逻辑</span></h3><p><img src="./img_/image-20240429000335126.png" referrerpolicy="no-referrer" alt="image-20240429000335126"></p><p><span>	</span><span>如上面示意图所示，基本操作的交互逻辑涉及三大部分：订阅发布总线模块，信息托管模块和数据持久化模块。</span></p><p><span>	</span><span>每个请求的通用流程如下：</span></p><p><span>	</span><span>当一个用户发出请求时，他的请求由订阅发布总线路由到后端对应的事件，进而到达信息托管模块中相应的功能实现，该模块进行逻辑处理和相关校验以判断是否与持久化模块交互，如果信息合法，则同步持久化模块，并向总线发回响应。</span></p><p><span>	</span><span>增量帧请求是本项目的核心同步交互：本地和远端各自去维护一套快照，用户交互产生的增量帧先会被节流和注入时间戳，送至后端后在海量数据包里进行一个裁决，最后增量被同步至各个客户端，同时远端进行并行同步。增量帧同步至前端后，前端会对增量进行一个合并生效，生效前在各自的浏览器上进行一次本地裁决完成冲突校验，以防操作矛盾。</span></p><p>&nbsp;</p><h3 id='42关键技术'><span>4.2关键技术</span></h3><p><img src="./img_/image-20240429000501875.png" referrerpolicy="no-referrer" alt="image-20240429000501875"></p><h4 id='421合法性校验'><span>4.2.1合法性校验</span></h4><p><span>	</span><span>所有数据包通过Netty-socketio通信框架路由到对应的事件，然后进行相应的合法性校验，一般为2步：</span></p><p><span>	</span><span>1.时间校验：每个图元信息（json串）都带有一个时间戳，后端会记录被合法提交给redis的最后一个时间戳，以与该时间戳进行比对，如果时间落后于合法时间戳，那么说明当前图元为时间不合法图元，当即抛弃掉，否则进行下一步校验。</span></p><p><span>	</span><span>2.冲突校验：用户可能有冲突的操作。比如一个人在编辑一图元，另一人删掉它，此时如果编辑的信息后到达，在同步后，就会与编辑操作相冲突，为解决这一问题，我使用一个map记录所有被删除图元的id，每次收到时间校验通过的数据包时，查询其id是否在map中，以判断其是否冲突。</span></p><p><span>	</span><span>合法性校验全部通过后，提交到持久化模块，进行当前图层map里信息的合并，并将此map放入历史信息栈之中去，以便后续的撤回重做机制。</span></p><p><span>	</span><span>最后，将合法的图元进行房间内广播，以同步到房间内所有人的图层上。即路由到前端对应的事件，交付数据包，等待进一步的处理。</span></p><h4 ><img src="./img_/image-20240429000610797.png" referrerpolicy="no-referrer" alt="image-20240429000610797"><span> </span></h4><h4 id='422解耦式模块设计'><span>4.2.2解耦式模块设计</span></h4><p><span>	</span><span>整个后端部分可整体性的被划分为三大部分：</span></p><h5 id='4221订阅发布总线模块'><span>4.2.2.1订阅发布总线模块</span></h5><p><span>	</span><span>承载模块间的无耦合通信，提供高效的命名空间管理的解决方案。将服务事件进行挂载，优化代码结构。</span></p><p><span>	</span><span>该模块主要依托netty-socketio通信框架建立，Socket.IO 是一个库，可以在客户端和服务器之间实现 低延迟, 双向 和 基于事件的 通信。它建立在 WebSocket 协议之上，并提供额外的保证，例如回退到 HTTP 长轮询或自动重新连接。前后端所有通信包通过在该框架中的自定义事件，实现相互间事件的订阅发布，以完成更好的功能解耦。</span></p><p><span> </span></p><h5 id='4222-信息托管模块'><span>4.2.2.2 信息托管模块</span></h5><p><span>	</span><span>承载业务逻辑，提供socket管理、房间管理、用户管理、图层管理、快照管理、聊天管理等相关服务：</span></p><p><span>维护socket连接list，以重连或发送同步等消息，</span></p><p><span>	</span><span>维护房间信息，包含每个房间的用户信息，房间内图元信息，聊天信息等，我们在同步图元编辑信息时需要对每个房间的用户列表进行遍历，对redis和本地内存中的全量帧进行更改。</span></p><p><span>	</span><span>用户管理，即房间列表的信息管理及用户权限的管理。所有用户分为房主和普通用户，房主有权切换房间模式为协作模式或者只读模式。如果为后者，则所有人不能编辑任何图元。</span></p><p><span>	</span><span>每个用户可对当前房间内信息保存快照，导出为文件，这样保留了以后恢复房间内数据的条件。</span></p><p><span>	</span><span>每个房间被创建时，相当于自动创建了一个群聊，所有人可以在里面聊天。</span></p><p><span> </span></p><h5 id='4223-数据持久化模块'><span>4.2.2.3 数据持久化模块</span></h5><p><span>	</span><span>基于Redis的数据持久化技术方案，提升服务容灾能力，实现服务重启而不丢数据，提升数据安全性和稳定性。本项目所有重要和大体量的信息保存在redis中，比如房间图元信息，聊天信息等等。</span></p><p><span>	</span><span>由于redis具有rdb和aof的存储机制，帮助我们成功实现服务不丢数据的崩溃重启。</span></p><p><span>	</span><span>在本项目中采用的redis数据结构为string，把对象信息转为string后存储在redis中。</span></p><p><img src="./img_/image-20240429001238125.png" referrerpolicy="no-referrer" alt="image-20240429001238125"></p><h4 id='43存储逻辑'><span>4.3存储逻辑</span></h4><p><span>	</span><span>在程序执行过程，可能会遇到大量图元存储在内存单元的情况，这时候，简明扼要的逻辑是必不可少的，首先是主体用户具有ID和权限属性，一个用户隶属于n个信息，n个用户对应一个房间（为避免服务器压力过大，这里我们设置上限为10），同时，n个具有时间和内容属性的消息主体包括于一个房间。这时，一个房间可以包括n个图层，每个图层又包括n个具有ID、缩放属性、位置坐标、旋转因子、类型为属性的图层对象，同时还与具有线宽、线颜色、填充颜色属性的画笔一一对应，包含于图层。</span></p><p><img src="./img_/image-20240429001342501.png" referrerpolicy="no-referrer" alt="image-20240429001342501"></p></div></div>
+</body>
+</html>

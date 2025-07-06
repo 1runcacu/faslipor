@@ -21,13 +21,18 @@ const store = {
     mutations: {
         setParams(state,params={}){
             state.params = params;
-            if(params&&params.user&&state.uid){
-                params.user.uid = state.uid;
-            }
+            // if(params&&params.user&&state.uid){
+            //     params.user.uid = state.uid;
+            // }
             Object.assign(PMS,params);
         },
         setRooms(state,rooms=[]){
             state.rooms = rooms;
+            const rid = state.params.room.rid;
+            const p = rooms.find(i=>i.rid===rid);
+            if(p){
+                Object.assign(state.params.room, p);
+            }
         },
         setWindow(state,data=window){
             const {innerHeight,innerWidth} = data;

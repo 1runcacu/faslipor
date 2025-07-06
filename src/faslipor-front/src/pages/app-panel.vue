@@ -1,6 +1,5 @@
 <template>
     <div id="box">
-        <input ref="upload" type="file" @change="handleFiles" accept=".fsl" v-show="false"/>
         <div class="header">
             <el-page-header @back="onBack">
                 <template #content>
@@ -67,14 +66,14 @@
                 </div>
             </el-collapse-item>
             <el-collapse-item title="更多信息" name="4">
-                <div>
+                <div :key="INFO">
                     <div v-for="(item,key) of config.room">
                         <b>{{code_room[key]}}:</b>{{item}}<br/>
                     </div>
                 </div>
                 <div>
                     <div v-for="(item,key) of config.user">
-                        <b>{{code_user[key]}}:</b>{{item}}<br/>
+                        <b>{{code_user[key]}}</b>{{code_user[key]?': '+item:''}}<br/>
                     </div>
                 </div>
             </el-collapse-item>
@@ -106,8 +105,6 @@ import {throttle,shakeProof,loader} from "@/api/util";
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 
-const upload = ref(null);
-
 const socket = inject("socket");
 const store = useStore();
 const router = useRouter();
@@ -115,6 +112,7 @@ const router = useRouter();
 const code_room = ref({
     "rid":"房间ID",
     "uid":"用户ID",
+    "psw":"房间密码",
     "name":"名称",
     "description":"简介",
     "state":"可加入",
@@ -132,11 +130,15 @@ const code_user = ref({
 
 let FIRST = true;
 
-var config = computed(()=>store.state.params||{room:{},user:{},layout:[]});
+const config = computed(()=>{
+    return store.state.params||{room:{},user:{},layout:[]};
+});
 
 let lock = false;
 
 const LOCK = computed(()=>config.value.room.lock);
+
+const INFO = ref("");
 
 watch(()=>[LOCK.value],p=>{
     lock = p[0]||false;
@@ -551,9 +553,14 @@ const makeAct = (item)=>{
             event="export";
             break;
         case "导入":
-            event="import";
-            // loader();
-            upload._value.click()
+            {
+                event="import";
+                const ipt = document.createElement('input');
+                ipt.onchange = handleFiles;
+                ipt.accept = ".fsl";
+                ipt.type = 'file';
+                ipt.click();
+            }
             return;
         case "撤销":
             event="undo";
@@ -664,7 +671,7 @@ const stream = data=>{
                 // showMSG("刷新成功","success");
                 break;
         }
-    }catch(err){console.log(err)};
+    }catch(err){console.log(err)}
 }
 
 var canvas; 
@@ -965,7 +972,7 @@ function init() {
         }
     });
 
-    pencil.freeDrawingBrush.width = 3;
+    pencil.freeDrawingBrush.width = 13;
     pencil.freeDrawingBrush.color = "#A1ABBF";
     pencil.isDrawingMode = 1; 
 

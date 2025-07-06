@@ -9,3 +9,5 @@
 2022/11/07 16:54:33 [notice] 23360#35800: signal process started
 2022/11/07 16:54:33 [error] 23360#35800: OpenEvent("Global\ngx_stop_14696") failed (2: The system cannot find the file specified)
 2022/11/07 16:57:37 [alert] 35340#18116: OpenEvent("ngx_master_17624") failed (2: The system cannot find the file specified)
+2022/11/16 15:11:15 [notice] 1896#10924: signal process started
+2022/11/16 15:11:15 [error] 1896#10924: OpenEvent("Global\ngx_stop_17624") failed (2: The system cannot find the file specified)

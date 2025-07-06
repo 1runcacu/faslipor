@@ -3,32 +3,76 @@
     <VueSnow/>
     <router-view />
     <vueBookVue/>
+    <el-dialog v-model="winShow" title="输入密码" width="30%" draggable v-drag>
+      <vueInputVue v-if="winShow" class="v-input" value="" @input="inRoomPsw" hint="房间密码" t="password"/>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="closeWin">取消</el-button>
+          <el-button type="primary" @click="enter">
+            确认
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import VueSnow from '@/components/vue-snow.vue';
 import vueBookVue from '@/components/vue-book.vue';
-import { inject,computed,getCurrentInstance,onMounted, onUnmounted } from "vue";
+import { inject,computed,getCurrentInstance,onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex';
 import { throttle,download } from '@/api/util';
 import { setAllow } from "@/state";
+import { ElDialog } from 'element-plus';
+import vueInputVue from '@/components/vue-input.vue';
 
 const ctx = getCurrentInstance().appContext.config.globalProperties;
 const socket = inject("socket");
 const router = useRouter();
 const store = useStore();
 
+let rid = "";
+let psw = "";
+
+const inRoomPsw = value=>psw=typeof(value)==='string'?value:psw;
+
+const winShow = ref(false);
+const closeWin = ()=>{
+  winShow.value = false;
+  psw = "";
+  rid = "";
+};
+
+const enter = ()=>{
+  socket.emit("query",{
+    event:"select",
+    params:{
+      rid,
+      psw
+    }
+  });
+  closeWin();
+}
+
+socket.on("verify", (res={}) => {
+    winShow.value = true;
+    rid = res.rid;
+});
+
 socket.on("message", (res={}) => {
     // console.log("message:",res);
-    ctx.$message(res);
+    // ctx.$message(res);
+    ctx.$log(res);
 });
 
 socket.on("asset", (res={}) => {
     const {event,data,params} = res;
     switch(event){
-      case "list":store.commit("setRooms",data);break;//console.log("asset:",res);
+      case "list":
+        store.commit("setRooms",data);
+        break;//console.log("asset:",res);
       case "sync":
         console.log(params);
         store.commit("setParams",params);break;
@@ -68,16 +112,19 @@ socket.on("reconnect",res=>{
 });
 
 socket.on("redirect", (res={}) => {
-    // console.log("redirect:",res);
+    store.commit("setParams",res.params);
     try{
       if(/panel/.test(res.path)){
         const {user:{uid}} = res.params;
         if(uid)store.commit("lock",uid);
+        setAllow(true);
+        router.push({path:res.path});
+      }else if(/\//.test(res.path)&&window.location.pathname!=='/'){
+        window.location.href = '/';
       }
-    }catch(err){ }
-    store.commit("setParams",res.params);
-    setAllow(true);
-    router.push({path:res.path});
+    }catch(err){ 
+      console.log(err);
+    }
 });
 
 const height = computed(()=>store.state.window.innerHeight+"px");
@@ -170,4 +217,9 @@ body {
   border-radius: 0.25em;
   background-color: #b9b9b9;
 }
+
+.v-input{
+  margin-bottom: 20px;
+}
+
 </style>

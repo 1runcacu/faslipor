@@ -1,9 +1,10 @@
 <template>
     <div id="chat">
         <div id="msg" class="box" ref="messageBox">
-            <transition name="drag-win" v-for="(item,index) in List" :key="index">
-                <vueMsgVue :message="item.message" :uid="item.uid" :uuid="config.user.uid" />
-            </transition>
+            <template v-for="(item,index) in List" :key="index">
+                <div v-if="timerShow(item,index)" class="timer">{{new Date(parseInt(item.date)).toLocaleString()}}</div>
+                <vueMsgVue :message="item.message" :uid="item.uid" :name="item.name" :uuid="config.user.uid" :s="config.user.ctrlId===item.uid" />
+            </template>
             <div ref="last"></div>
         </div>
         <div id="input">
@@ -42,6 +43,14 @@ const message = data=>{
     RFS.value = ID();
 }
 
+const dt = 3*60*1000;
+
+const timerShow = (item,index)=>{
+    if(index===0)return true;
+    let last = MessageList[index-1];
+    return (parseInt(item.date)-parseInt(last.date))>=dt;
+}
+
 var ID = ()=>Date.now().toString(36);
 
 const RFS = ref("");
@@ -53,7 +62,7 @@ const Msg = ref("");
 const List = computed(()=>{
     RFS.value;
     nextTick(()=>{
-        messageBox._value.scrollTop = last._value.offsetTop;
+        messageBox.value._value.scrollTop = last.value._value.offsetTop;
     });
     return MessageList;
 });
@@ -77,6 +86,8 @@ const chat = (event,frame={})=>{
         rid,uid,event,frame
     });
 };
+
+
 
 onMounted(()=>{
     socket.on("chat",message);
@@ -103,6 +114,11 @@ onUnmounted(()=>{
     flex: 1;
     width: 100%;
     overflow-y: auto; 
+}
+#msg>.timer{
+    text-align: center;
+    border-bottom: 1px solid rgba(199, 199, 199, 0.733);
+    margin-left: 5px;
 }
 #input{
     height: 80px;

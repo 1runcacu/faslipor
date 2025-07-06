@@ -9,11 +9,19 @@
     >
         <template #head>
           <div><b>{{title}}</b></div>
-          <el-button link @click="isCollapse=false" v-show="isCollapse"><el-icon><CaretRight /></el-icon></el-button>
-          <el-button link @click="isCollapse=true" v-show="!isCollapse"><el-icon><CaretLeft /></el-icon></el-button>
+          <!-- <el-button link @click="isCollapse=false" v-show="isCollapse"><el-icon><CaretRight /></el-icon></el-button>
+          <el-button link @click="isCollapse=true" v-show="!isCollapse"><el-icon><CaretLeft /></el-icon></el-button> -->
         </template>
         <div class="body">
-            <el-scrollbar class="left" @touchmove.stop>
+            <div>
+                <h3>更多信息</h3>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;<a href="/README.html" target="_blank" >跳转文档</a></p>
+            </div>
+            <div>
+                <h3>扫码访问</h3>
+                <img id="qcode" src="/qcode.png"/>
+            </div>
+            <!-- <el-scrollbar class="left" @touchmove.stop>
                 <el-menu
                     default-active="2"
                     class="el-menu-vertical-demo"
@@ -58,8 +66,7 @@
                 <el-collapse v-model="activeNames" @change="handleChange">
                     <el-collapse-item title="Consistency" name="1">
                         <div>
-                        Consistent with real life: in line with the process and logic of real
-                        life, and comply with languages and habits that the users are used to;
+                        这里可以写点文档，但作者太懒了
                         </div>
                         <div>
                         Consistent within interface: all elements should be consistent, such
@@ -101,14 +108,14 @@
                         </div>
                     </el-collapse-item>
                 </el-collapse>
-            </el-scrollbar>
+            </el-scrollbar> -->
         </div>
     </winUiVue>
 </template>
 
 <script setup>
 import { ElMenu,ElSubMenu,ElMenuItemGroup,ElMenuItem,ElCollapse,ElCollapseItem } from 'element-plus';
-import { ref,computed } from 'vue';
+import { ref,computed, onMounted } from 'vue';
 import winUiVue from './win-ui.vue';
 import {
   Document,
@@ -186,6 +193,7 @@ const WH = computed(()=>{
     display: flex;
     overflow: hidden;
     align-items: stretch;
+    flex-direction: column;
 }
 .left{
     border-right: 1px solid black;
@@ -202,6 +210,12 @@ const WH = computed(()=>{
 }
 .el-collapse{
     --el-collapse-content-bg-color: rgba(255,255,255,0) !important;
+}
+#qcode {
+    width: 100px;
+    height: 100px;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 </style>
 
